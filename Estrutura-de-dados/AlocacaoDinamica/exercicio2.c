@@ -27,13 +27,13 @@ main(){
     //a variavel matriz cria um vetor de ponteiros, com a primeira dimensão, sendo as linhas 
     matriz = malloc ( tamanho * sizeof( int *));
 
-    printf("Digite os valores da matriz \n");
     for (i=0; i < tamanho; i++){
         //Cria colunas para cada linha da matriz, com tipos inteiros 
         matriz[i] = malloc (tamanho * sizeof(int));
     }
 
     //Preenche a matriz
+    
     for(i = 0; i < tamanho; i++){
         for (j=0; j < tamanho; j++){
             printf("Posicao [%i][%i]: ", i, j);
