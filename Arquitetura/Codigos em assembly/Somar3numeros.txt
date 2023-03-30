@@ -1,0 +1,34 @@
+.section .data //parte do codigo que criamos as variaveis 
+//	nome: tipo valor
+	n1: int 10
+	n2: int 20
+	n3: int 30
+	resposta: int 0
+	
+//asciz: tipo de caracter
+	imprimeResp: asciz "%d + %d + %d = %d \n"
+
+.section .text
+globl _start // tipo funcao main
+_start:
+//Calculos da soma dos tres numeros e atribuindo a resposta
+	mov n1, %eax
+	add n2, %eax
+	add n3, %eax
+	mov %eax, resp
+
+//colocamos as informações na pilha, em ordem de apresentação
+	push resp
+	push n3
+	push n2
+	push n1
+	push imprimeResp
+
+//chamamos funcionalidade de C e passamos as quantidades de push x bits (5x4) e o resgitrador aponta pro inicio da pilha
+	call printf
+	add $20, %esp
+
+//Fim do programa
+	push 0 
+	call exit
+		
