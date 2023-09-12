@@ -1,0 +1,15 @@
+#lang racket
+(require examples)
+
+;Uma polegada é um medida de comprimento utilizado no sistema imperial e corresponde a 2,54cm.
+;a. Projete uma função que converta uma medida em centímetros para polegadas.
+;b. Projete uma função que converta uma medida em polegadas para centímetros
+
+(define (cm->pol cm) (/ cm 2.54))
+(define (pol->cm pol) ( * pol 2.54))
+
+(examples
+(check-= (cm->pol 1) 0.393700 0.00001)
+(check-= (cm->pol 27) 10.6298 0.001)
+(check-equal? (pol->cm 1) 2.54)
+(check-equal? (pol->cm 54) 137.16))
