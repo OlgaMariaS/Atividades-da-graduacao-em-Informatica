@@ -18,6 +18,7 @@
 ;---------------------------------------------------------------------------------------------
 (define lista '("a" "b" "b" "c" "d" "a" "e" "b" "d" "a" "e" "c"))
 (define text  "a b b c d a e b d a e c")
+(define lista1 '("3a" "3b" "2b" "2c" "2d" "2a" "2e" "1b" "1d" "1a" "1e" "1c"))
 
 ;Converter string em lista
 (define (string->lista text)
@@ -27,7 +28,7 @@
 (define (contar lista elemento)
   (cond
     [(empty? lista) 0]
-    [(equal? elemento (first lista)) (+ 1 (contar (rest lista) elemento))]
+    [(equal? elemento (first lista)) (add1 (contar (rest lista) elemento))]
     [else (contar (rest lista) elemento)]))
 
 ;Faz a concatenação entre a palavra e a quantidade de vezes que ela se repete na lista
@@ -39,13 +40,27 @@
 ;preciso percorrer a lista e remover os elementos que são iguais 
 (define (qtde_pal lista)
   (cond
-    [(empty? lista) 0]
-    []
-    [else (cons (concatena lista) (rest lista))]))
+    [(empty? lista) empty]
+    [else (cons (concatena lista) (qtde_pal (rest lista)))]))
 
+;Função que deve remover os elementos repetidos da lista
+(define (remove_repetidos lista elemento)
+  (cond
+    [(empty? lista) empty]
+    [(equal? elemento (substring(first lista) 1)) (remove_repetidos (rest lista) elemento)]
+    [else (cons (first lista) (remove_repetidos (rest lista) elemento))]))
+
+(define (lista-final lista)
+  (cond
+    [(empty? lista) empty]
+    [else (cons (first lista) (lista-final (remove_repetidos lista (substring(first lista) 1))))]))
+
+;----------------------------------------------------------------------------------------------
 (examples
  (check-equal? (string->lista "a b b c d a e b d a e c") lista)
  (check-equal? (contar lista "a") 3)
  (check-equal? (concatena lista) "3a")
- (check-equal? (qtde_pal lista) '("3a" "b" "b" "c" "d" "a" "e" "b" "d" "a" "e" "c"))
+ (check-equal? (qtde_pal (string->lista text)) '("3a" "3b" "2b" "2c" "2d" "2a" "2e" "1b" "1d" "1a" "1e" "1c"))
+ (check-equal? (remove_repetidos lista1 "a") '("3b" "2b" "2c" "2d" "2e" "1b" "1d" "1e" "1c"))
+ (check-equal? (lista-final lista1) '("3a" "3b" "2c" "2d" "2e"))
 )
