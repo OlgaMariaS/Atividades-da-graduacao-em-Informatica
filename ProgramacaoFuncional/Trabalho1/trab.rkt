@@ -16,9 +16,12 @@
 (define (conta-palavras text n)
   text)
 ;---------------------------------------------------------------------------------------------
+(struct qtde_palavra (qtde pal)#:transparent)
 (define lista '("a" "b" "b" "c" "d" "a" "e" "b" "d" "a" "e" "c"))
 (define text  "a b b c d a e b d a e c")
-(define lista1 '("3a" "3b" "2b" "2c" "2d" "2a" "2e" "1b" "1d" "1a" "1e" "1c"))
+(define lista1 (list (qtde_palavra 3 "a") (qtde_palavra 3 "b") (qtde_palavra 2 "b") (qtde_palavra 2 "c") (qtde_palavra 2 "d") (qtde_palavra 2 "a") (qtde_palavra 2 "e") (qtde_palavra 1 "b") (qtde_palavra 1 "d") (qtde_palavra 1 "a")(qtde_palavra 1 "e") (qtde_palavra 1 "c")))
+(define lista1-sem-a (list (qtde_palavra 3 "b") (qtde_palavra 2 "b") (qtde_palavra 2 "c") (qtde_palavra 2 "d") (qtde_palavra 2 "e") (qtde_palavra 1 "b") (qtde_palavra 1 "d") (qtde_palavra 1 "e") (qtde_palavra 1 "c")))
+(define lista2 (list (qtde_palavra 3 "a") (qtde_palavra 3 "b") (qtde_palavra 2 "c") (qtde_palavra 2 "d") (qtde_palavra 2 "e")))
 
 ;Converter string em lista
 (define (string->lista text)
@@ -33,34 +36,36 @@
 
 ;Faz a concatenação entre a palavra e a quantidade de vezes que ela se repete na lista
 (define (concatena lista)
-  (string-append (number->string (contar lista (first lista)))
-                 (first lista)))
+    (qtde_palavra (contar lista (first lista))
+                  (first lista)))
 
 ;Deve percorrer a lista e criar uma nova, com os elementos e suas quantidades
-;preciso percorrer a lista e remover os elementos que são iguais 
-(define (qtde_pal lista)
+(define (lista-qtde-pal lista)
   (cond
     [(empty? lista) empty]
-    [else (cons (concatena lista) (qtde_pal (rest lista)))]))
+    [else (cons (concatena lista) (lista-qtde-pal (rest lista)))]))
 
 ;Função que deve remover os elementos repetidos da lista
 (define (remove_repetidos lista elemento)
   (cond
     [(empty? lista) empty]
-    [(equal? elemento (substring(first lista) 1)) (remove_repetidos (rest lista) elemento)]
+    [(equal? elemento (qtde_palavra-pal (first lista))) (remove_repetidos (rest lista) elemento)]
     [else (cons (first lista) (remove_repetidos (rest lista) elemento))]))
 
 (define (lista-final lista)
   (cond
     [(empty? lista) empty]
-    [else (cons (first lista) (lista-final (remove_repetidos lista (substring(first lista) 1))))]))
+    [else (cons (first lista) (lista-final (remove_repetidos lista (qtde_palavra-pal (first lista)))))]))
 
+;Recebe uma lista e retorna ela ordenada
+(define (ordena lista)
+  )
 ;----------------------------------------------------------------------------------------------
 (examples
  (check-equal? (string->lista "a b b c d a e b d a e c") lista)
  (check-equal? (contar lista "a") 3)
- (check-equal? (concatena lista) "3a")
- (check-equal? (qtde_pal (string->lista text)) '("3a" "3b" "2b" "2c" "2d" "2a" "2e" "1b" "1d" "1a" "1e" "1c"))
- (check-equal? (remove_repetidos lista1 "a") '("3b" "2b" "2c" "2d" "2e" "1b" "1d" "1e" "1c"))
- (check-equal? (lista-final lista1) '("3a" "3b" "2c" "2d" "2e"))
+ (check-equal? (concatena lista) (qtde_palavra 3 "a"))
+ (check-equal? (lista-qtde-pal (string->lista text)) lista1)
+ (check-equal? (remove_repetidos lista1 "a") lista1-sem-a)
+ (check-equal? (lista-final lista1) lista2)
 )
