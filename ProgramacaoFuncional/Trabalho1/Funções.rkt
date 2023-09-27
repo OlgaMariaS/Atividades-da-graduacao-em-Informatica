@@ -6,15 +6,7 @@
 ;se chegar ao fim da lista, deverá ir pra proxima palavra
 ;a palavra com a sua quantidade de repetições, será armazenada em uma nova lista, e esta recebe todas as outras palavras
 ;quando acabar a contagem de palavras, deverá ser ordenado a nova lista (ordem será pelo numeros de repetições, e caso o n° seja igual, vai pela letra alfabetica
-;a lista ordenada que será o retorno final da conta-palavras
-
-;;funcao que recebe a string contendo as palavras a serem contados e retorna
-;;a string a ser escrita no arquivo de saida, onde essa string eh formada
-;;por n linhas, onde cada linha contem uma palavra e sua contagem de aparicao na
-;;string de entrada.
-;; string inteiro -> string
-(define (conta-palavras text n)
-  text)
+;a lista ordenada que será o retorno final.
 ;---------------------------------------------------------------------------------------------
 (struct qtde_palavra (qtde pal)#:transparent)
 (define lista '("a" "b" "b" "c" "d" "a" "e" "b" "d" "a" "e" "c"))
@@ -34,12 +26,12 @@
     [(equal? elemento (first lista)) (add1 (contar (rest lista) elemento))]
     [else (contar (rest lista) elemento)]))
 
-;Faz a concatenação entre a palavra e a quantidade de vezes que ela se repete na lista
+;Faz a concatenação entre a palavra e a quantidade de vezes que ela se repete na lista, usando a struct qtde_palavra
 (define (concatena lista)
     (qtde_palavra (contar lista (first lista))
                   (first lista)))
 
-;Deve percorrer a lista e criar uma nova, com os elementos e suas quantidades
+;Deve percorrer a lista e criar uma nova, com as palavras e suas quantidades
 (define (lista-qtde-pal lista)
   (cond
     [(empty? lista) empty]
@@ -57,9 +49,29 @@
     [(empty? lista) empty]
     [else (cons (first lista) (lista-final (remove_repetidos lista (qtde_palavra-pal (first lista)))))]))
 
-;Recebe uma lista e retorna ela ordenada
+;Recebe uma lista e retorna ela ordenada usando metodo de ordenação buble sort 
 (define (ordena lista)
-  )
+  (cond
+    [(empty? (rest lista)) lista]
+    [(> (qtde_palavra-qtde (first lista)) (qtde_palavra-qtde (first (rest lista))))
+         (cons (first lista)
+               (ordena (rest lista)))]
+    [(= (qtde_palavra-qtde (first lista)) (qtde_palavra-qtde (first (rest lista))))
+         (cond
+             [(string<? (qtde_palavra-pal (first lista)) (qtde_palavra-pal (first (rest lista))))
+              (cons (first lista)
+                    (ordena (rest lista)))]
+             [else (cons (first (rest lista))
+                         (ordena (cons (first lista)
+                                       (cdr (rest lista))))) ])]                
+    [else (cons (first (rest lista))
+                (ordena (cons (first lista)
+                              (cdr (rest lista)))))]))
+
+(define (buble lista passadas)
+  (cond
+    [(equal? (length lista) passadas) lista]
+    [else (buble (ordena lista) (add1 passadas))]))
 ;----------------------------------------------------------------------------------------------
 (examples
  (check-equal? (string->lista "a b b c d a e b d a e c") lista)
@@ -68,4 +80,5 @@
  (check-equal? (lista-qtde-pal (string->lista text)) lista1)
  (check-equal? (remove_repetidos lista1 "a") lista1-sem-a)
  (check-equal? (lista-final lista1) lista2)
+ (check-equal? (buble lista2 0) lista-ordenada)
 )
