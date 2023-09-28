@@ -68,10 +68,10 @@
                 (ordena (cons (first lista)
                               (cdr (rest lista)))))]))
 
-(define (buble lista passadas)
+(define (bubble lista passadas)
   (cond
     [(equal? (length lista) passadas) lista]
-    [else (buble (ordena lista) (add1 passadas))]))
+    [else (bubble (ordena lista) (add1 passadas))]))
 ;----------------------------------------------------------------------------------------------
 (examples
  (check-equal? (string->lista "a b b c d a e b d a e c") lista)
@@ -80,5 +80,5 @@
  (check-equal? (lista-qtde-pal (string->lista text)) lista1)
  (check-equal? (remove_repetidos lista1 "a") lista1-sem-a)
  (check-equal? (lista-final lista1) lista2)
- (check-equal? (buble lista2 0) lista-ordenada)
+ (check-equal? (bubble lista2 0) lista2)
 )
