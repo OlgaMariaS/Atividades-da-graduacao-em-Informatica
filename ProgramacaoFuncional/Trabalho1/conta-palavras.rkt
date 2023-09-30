@@ -1,5 +1,8 @@
 #lang racket
-
+;;funcao que recebe a string contendo as palavras a serem contados e retorna
+;;a string a ser escrita no arquivo de saida, onde essa string eh formada
+;;por n linhas, onde cada linha contem uma palavra e sua contagem de aparicao na
+;;string de entrada.
 ;; string inteiro -> string
 (define (conta-palavras text n)
 (struct qtde_palavra (qtde pal)#:transparent)
@@ -74,18 +77,49 @@
 ;Percorre a lista de palavras, retornada por "lista-final", mostrando somente as N primeiras, e adicionando quebra de linha apos cada elemento
 (define (mostra-N-da-lista-final lista passadas)                            
   (cond
-    ;[(> passadas n ) parar de imprimir]
-    [(equal? n passadas) (display "")]
-    [else (display (format "~a ~a ~n" (qtde_palavra-pal (first lista))
-                             (number->string (qtde_palavra-qtde (first lista)))))
-          (mostra-N-da-lista-final (rest lista) (add1 passadas))]))
+    [(empty? lista) ""]
+    [(= n passadas) ""]
+    [else (string-append (format "~a ~a ~n" (qtde_palavra-pal (first lista))
+                                            (number->string (qtde_palavra-qtde(first lista))))
+                         (mostra-N-da-lista-final (rest lista) (add1 passadas)))]))
 
 (mostra-N-da-lista-final (lista-final text) 0)
 )
-;---------------------------------------------------------------------------------------------
-(define text  "b b c d a e b d a e c e t a e a f b w e a f e a g e a c b b b q c g k l o n h g t teste j j j l c v o o o")
+;----------------------------------------------------------------------------------------------------------------------------------------;
+;;Parser de argumentos da linha de comando
+(define output-function (make-parameter "output.txt"))
+(define number-of-words (make-parameter "5"))
+(define input-function (make-parameter "texto.txt"))
 
-(conta-palavras text 18)
-;- LINHA 77 COMO FAZER PRA PARAR?
-;- TESTAR POR LINHA DE COMANDO
-;- TENTEI JOGAR O TEXTO NA STRING E NÃO BATEU AS QUANTIDADES
+(define args (command-line #:program "contador-palavras"
+                           #:once-each
+                           [("-i" "--input") if
+                             "nome do arquivo de entrada (default: texto.txt)"
+                             (input-function if)]
+                           [("-o" "--output") of
+                             "nome do arquivo de saida (default: output.txt)"
+                             (output-function of)]
+                           [("-n") n
+                             "numero de palavras (default: 30)"
+                             (number-of-words n)]
+                           #:args ()
+                           (list (input-function) (output-function) (number-of-words))))
+
+(define arg-lst args)
+
+(define input-file (first arg-lst))  
+(define output-file (second arg-lst))
+(define number-words (third arg-lst))
+
+;;leitura do arquivo de entrada
+(define in-port (open-input-file input-file))
+(define input-text (port->string in-port))
+(close-input-port in-port)
+
+;;criacao do texto de saida
+;;Essa criacao eh feita pela chamada da funcao conta palavras
+(define output-text (conta-palavras input-text (string->number number-words)))
+;;escrita do resultado no arquivo de saida.
+(define out-port (open-output-file output-file #:exists 'replace))
+(display output-text out-port)
+(close-output-port out-port)

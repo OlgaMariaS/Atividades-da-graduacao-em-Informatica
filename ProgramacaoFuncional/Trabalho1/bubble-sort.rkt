@@ -26,12 +26,12 @@
                 (ordena (cons (first lista)
                               (cdr (rest lista)))))]))
 
-(define (buble lista passadas)
+(define (bubble lista passadas)
   (cond
     [(equal? (length lista) passadas) lista]
-    [else (buble (ordena lista) (add1 passadas))]))
+    [else (bubble (ordena lista) (add1 passadas))]))
 
-(buble lista2 0)
-(buble lista3 0)
-(buble lista4 0)
+(bubble lista2 0)
+(bubble lista3 0)
+(bubble lista4 0)
 
