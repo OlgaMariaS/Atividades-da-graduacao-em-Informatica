@@ -17,6 +17,7 @@ typedef struct _cabecalho {
 typedef struct _pagina {
     int num_chaves;
     int chaves[ORDEM-1];
+    int offset[ORDEM-1];
     int filhos[ORDEM];
 } PAGINA;
 
@@ -64,15 +65,18 @@ int novo_rrn();
     => Um número inteiro que corresponde ao RRN da uma nova página
 **/
 
-void inicializa_pagina(PAGINA *pag);
-/**
-    Função que inicializa uma pagina.
-    Todas as posições dos campos chaves e filhos serão inicializadas com NULO (-1).
-    O campo num_chaves será inicializado com zero.
+void inicializa_pagina(PAGINA pag){ // preciso usar ponteiro?? PAGINA *pag
+    int i;
+    pag.num_chaves = 0;
 
-    Entrada:
-    => PAGINA * pag = ponteiro para a página que será inicializada 
-**/
+    for(int i = 0; i < ORDEM-1; i++){
+        pag.chaves[i] = NULO;
+        pag.offset[i] = NULO;
+        pag.filhos[i] = NULO;
+    }
+    pag.filhos[i] = NULO;
+}
+
 
 void insere_na_pagina(int chv_pro, int rrn_pro, int chaves[], int filhos[], int *num_chaves);
 /**
