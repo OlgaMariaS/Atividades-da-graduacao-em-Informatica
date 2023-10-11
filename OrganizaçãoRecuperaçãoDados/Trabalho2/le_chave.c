@@ -1,28 +1,60 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libarvb.h"
 
-struct registro {
-    short tamanho_chave;
-    int chave_primaria; 
-    int offset;    
-} REGISTRO;
+// Declaracoes constantes
+#define DELIM_STR "|"
+#define TAM_STR 30
+#define TAM_MAX_REG 256
 
-void le_chave(FILE *dados, int offset){
+// Implementacao da funcao leia_reg
+short leia_reg(char * buffer, int tam, FILE * arq){
+    short comp_reg;
 
-    fseek(dados,offset,SEEK_SET);
-    fread(&REGISTRO.tamanho_chave,sizeof(REGISTRO.tamanho_chave),1,dados);
-    fseek(dados,(offset+2),SEEK_SET);
-    fread(&REGISTRO.chave_primaria,sizeof(REGISTRO.chave_primaria),1,dados);
-    REGISTRO.offset = offset+2;
+    if (fread(&comp_reg, sizeof(comp_reg), 1, arq) == 0) {
+        return 0;
+    }
+    if (comp_reg < tam) {
+        fread(buffer, sizeof(char), comp_reg, arq);
+        buffer[comp_reg] = '\0';
+        return comp_reg;
+    } else {
+        printf("Buffer overflow\n");
+        return 0;
+    }
 }
 
-void main (){
-    //abre o arquivo que o nome deve ser passado por comando
+// Implementacao da funcao main
+int main(){
     FILE *dados;
-    dados = fopen("dados.dat", "r");
+    int offset = 4; 
+    int i = 0;
+    int qtde_reg;
+    char buffer[TAM_MAX_REG];
+    int chave;
+    char * campo;
+    short tamanho;
 
+    dados = fopen("dados10.dat", "r");
 
+    //armazena o tamanho do 1° registro
+    fseek(dados, 0,SEEK_SET);
+    fread(&qtde_reg,sizeof(qtde_reg),1,dados);
     
+    while(i <= qtde_reg){
+
+        fseek(dados, offset,SEEK_SET);
+        tamanho = leia_reg(buffer, TAM_MAX_REG, dados);
+        campo = strtok(buffer, DELIM_STR);
+        chave = atoi(campo);
+        
+        printf("chave: %i \n", chave);
+        offset = offset + tamanho + sizeof(tamanho);
+        i++;
+    }
+    
+    fclose(dados);
+    return 0;
 }
+
+
