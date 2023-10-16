@@ -32,10 +32,8 @@ extern FILE * arvb;
 
 // Funções
 int le_pagina(int rrn, PAGINA *pag){
-
     //Byte-offset = tamanho do cabeçalho + RRN * tamanho do registro
     int byte_offset = sizeof(int) + (rrn * sizeof(pag));
-
     fseek(arvb, byte_offset, SEEK_SET);
     fread(&pag, sizeof(pag), 1, arvb); 
 }
@@ -64,7 +62,7 @@ void inicializa_pagina(PAGINA pag){ // preciso usar ponteiro?? PAGINA *pag
     int i;
     pag.num_chaves = 0;
 
-    for(int i = 0; i < ORDEM-1; i++){
+    for(i = 0; i < ORDEM-1; i++){
         pag.chaves[i] = NULO;
         pag.offset[i] = NULO;
         pag.filhos[i] = NULO;
@@ -145,7 +143,7 @@ int insere(int rrn_atual, int chave, int offset, int *filho_d_pro, int *chave_pr
         *filho_d_pro = NULO;
         return PROMOCAO;
     }else{
-        le_pagina(rrn_atual, pag);
+        le_pagina(rrn_atual, &pag);
         ACHOU = busca_na_pagina(chave, *pag, &POS);
     }
     
@@ -212,7 +210,7 @@ int imprime_pagina(int rrn){
     PAGINA *pag;
     retorno = le_pagina(rrn, pag);
 
-    if(retorno = 1){
+    if(retorno == 1){
         printf("Chaves: ");
         for(i = 0; i < pag->num_chaves; i++){
             if(i == pag->num_chaves){
@@ -275,15 +273,5 @@ int imprime_arvore(){
     printf("Impressao realizada com sucesso!");
     return 1;
 }
-
-int leia_chave(FILE * chaves);
-/**
-    Função que le uma chave (número inteiro) de um arquivo texto contendo uma chave por linha
-
-    Saídas:
-    => número inteiro correspondente à chave lida
-    => -1 = não foi possível ler uma chave, possivelmente por ser o fim de arquivo
-    
-**/
 
 #endif // ARVB_H_INCLUDED
