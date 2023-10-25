@@ -1,0 +1,78 @@
+Pagina 0
+Chaves: 1 | 2 | 4 | 12
+Offsets: 2087 | 2793 | 802 | 693
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 1
+Chaves: 132 | 135 | 136 | 137
+Offsets: 1599 | 2833 | 2135 | 1287
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 2
+Chaves: 14 | 43 | 66
+Offsets: 410 | 234 | 357
+Filhos: 0 | 6 | 14 | 4
+
+Pagina 3
+Chaves: 184 | 185 | 186 | 187
+Offsets: 2013 | 2521 | 454 | 1462
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 4
+Chaves: 70 | 74 | 82 | 85
+Offsets: 2454 | 1036 | 755 | 654
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 5
+Chaves: 94 | 96
+Offsets: 1246 | 53
+Filhos: -1 | -1 | -1
+
+Pagina 6
+Chaves: 20 | 22 | 28 | 37
+Offsets: 1963 | 2569 | 2409 | 1342
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 7
+Chaves: 99 | 120 | 143
+Offsets: 983 | 110 | 1879
+Filhos: 5 | 11 | 1 | 13
+
+- - - - - - - - - - Raiz  - - - - - - - - - -
+Pagina 8
+Chaves: 89 | 151
+Offsets: 841 | 592
+Filhos: 2 | 7 | 12
+- - - - - - - - - - - - - - - - - - - - - - -
+
+Pagina 9
+Chaves: 163 | 168 | 170 | 174
+Offsets: 2735 | 174 | 4 | 2904
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 10
+Chaves: 195 | 198 | 199
+Offsets: 903 | 275 | 2959
+Filhos: -1 | -1 | -1 | -1
+
+Pagina 11
+Chaves: 110 | 112 | 115 | 119
+Offsets: 1792 | 2199 | 2654 | 1385
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Pagina 12
+Chaves: 177 | 189
+Offsets: 523 | 1673
+Filhos: 9 | 3 | 10
+
+Pagina 13
+Chaves: 145 | 148 | 149
+Offsets: 1538 | 1094 | 2247
+Filhos: -1 | -1 | -1 | -1
+
+Pagina 14
+Chaves: 50 | 52 | 53 | 62
+Offsets: 1731 | 2353 | 1180 | 2302
+Filhos: -1 | -1 | -1 | -1 | -1
+
+Impressao realizada com sucesso!

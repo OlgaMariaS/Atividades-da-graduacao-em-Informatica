@@ -1,0 +1,23 @@
+Pagina 0
+Chaves: 7 | 24 | 32
+Offsets: 4 | 240 | 516
+Filhos: -1 | -1 | -1 | -1
+
+Pagina 1
+Chaves: 65 | 80 | 88
+Offsets: 123 | 594 | 460
+Filhos: -1 | -1 | -1 | -1
+
+- - - - - - - - - - Raiz  - - - - - - - - - -
+Pagina 2
+Chaves: 35 | 92
+Offsets: 63 | 189
+Filhos: 0 | 1 | 3
+- - - - - - - - - - - - - - - - - - - - - - -
+
+Pagina 3
+Chaves: 142 | 194
+Offsets: 314 | 374
+Filhos: -1 | -1 | -1
+
+Impressao realizada com sucesso!

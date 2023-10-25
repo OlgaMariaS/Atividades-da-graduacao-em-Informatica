@@ -16,9 +16,9 @@
     (cond
       [(>= total m) meses]
       [(= meses 1) (calculo-montante (* total %) (add1 meses))]
-      [else (calculo-montante (* (+ r total) %) (add1 meses))]))
+      [else (calculo-montante (* (+ r total) %) (add1 meses))])) 
 
-  (calculo-montante r 1))
+  (calculo-montante r 0))
 
 ;b. Além disso, ele quer saber quanto ele teria ao fim de um determinado periodo
 ;de tempo t meses, se mantivesse esse deposito de r reais mensais com
@@ -31,13 +31,11 @@
     (cond
       [(= meses t) total]
       [(= meses 1) (calculo (* total %) (add1 meses))]
-      [else (calculo (* (+ r total) %) (add1 meses))]))
+      [else (calculo (* (+ total r) %) (add1 meses))]))
   
   (calculo r 0))
 
-
 (examples
- ;(check-equal? (tempo-para-montante 100 3 1500) 12)
- (check-equal? (total-acumulado 100 3 12) )
+ (check-equal? (tempo-para-montante 100.0 3 1500.0) 13)
+ (check-= (total-acumulado 100.0 3 13) 1612.0 1)
 )
-;https://www.idinheiro.com.br/calculadoras/calculadora-juros-compostos/
