@@ -1,0 +1,23 @@
+- Passo um: encontrar o estado inicial.
+- Passo dois: partindo do estado inicial, verifique quais estados são diretamente alcançáveis.
+- Passo três: verifique no estado inicial pra onde ele leva cada símbolo, se um símbolo levar para mais de um lugar, então você terá de criar um conjunto com todos os estados que esse símbolo destina.
+- Passo quatro: verifique e teste para onde cada item no conjunto combinado com um símbolo leva, e se necessário crie novos conjuntos.
+- Passo cinco: repita até que todos o autômato esteja fechado sem possibilidades abertas (todos os estados levam os simbolos a algum lugar)
+
+Exemplo:
+- Passo 1:
+      Estado inicial: S0.
+- Passo 2:
+     δ(S0, a) -> {S0, S1}
+     δ(S0, b) -> {S0}
+     Como "a" vai para dois lugares, teremos de criar o nosso primeiro conjunto {S0, S1}
+- Passo 3:
+     Vamos testar "a" e "b" para cada item do conjunto {S0, S1}...
+     δ(S0, a) -> {S0, S1}
+     δ(S0, b) -> {S0}
+     δ(S1, a) -> {S2}
+     δ(S1, b) -> {λ}  (vai pro trash)
+- Passo 4:
+     Como "a" no conjunto {S0, S1} vai para S0, S1 e S2, teremos de criar o conjunto {S0, S1, S2}. No caso do "b", como já existe o estado {S0}, a gente só volta a setinha pra ele.
+- Passo 5:
+      (repita o processo até acabar).
