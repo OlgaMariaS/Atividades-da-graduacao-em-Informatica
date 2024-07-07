@@ -1,0 +1,35 @@
+html {
+  height: 100%;
+  width: 100%;
+}
+body{
+  background-color:#dddef3;
+  font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+ul {
+  list-style-type: circle;
+}
+table{
+  width: 100%;
+}
+table, th, td, caption {
+  align-items: center;
+  border: 1px solid black;
+  border-radius: 5px;
+  text-align: center;
+}
+caption, th{
+  background-color: #5576aa;
+  color: white;
+}
+td{
+  background-color:white;
+}
+
+#segundoAno, #terceiroAno {
+  background-color: #f2f2f2;
+  padding: 10px;
+  margin: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
