@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Saiba Mais</title>
+	<link rel="stylesheet" href="/css/styles.css">
+	<script src="/javascript/index.js"></script>
+	<script src="/javascript/avaliacaoCurso.js"></script>
+	<link rel="shortcut icon" href="imagem/icone_uem.jpg" type="image/x-icon">
+</head>
+
+<body>
+	<header class="headerSaibaMais">
+		<div class="logo">
+			<a href="/index.html"><img src="/img/logo_uem.png" alt="Logo do Site"></a>
+		</div>
+		<div class="nome-site">
+			<h1>O que achou da proposta do curso?</h1>
+		</div>
+		<div class="user-info">
+			<a href="/pagina_inicial/cadastro.html"><img src="/img/2993685_brand_brands_google_logo_logos_icon.png" alt="Imagem Aleatoria" id="user-photo"></a>
+			<p id="user-login-info">Usuário não autenticado</p>
+		</div>
+	</header>
+	
+	<div id="menu">
+		<a href="usuarioLogado.html">Home</a>
+		<a href="curso.html">Curso</a>
+		<a href="atualizarDados.html">Atualizar Dados</a>
+		<a href="avaliacao.html">Avaliar Curso</a>
+		<a href="/index.html">Sair</a>
+	</div>
+	
+	<main class="mainSaibaMais">
+		<div class="comentarios">
+			<h2 id="comentarios">Comentários</h2><br>
+			<p>Esta seção é destinada para o envio de comentários. Então, fique à vontade para expressar sua opinião, críticas e sugestão em relação aos temas apresentados. :)</p>
+			<form id="formComentario">
+				<label for="nome">Nome:</label>
+				<input type="text" id="nome" name="nome" required><br>
+				<label for="email">Email:</label>
+				<input type="email" id="email" name="email" required><br>
+				<div class="comentario-box">
+					<textarea id="comentario-area" placeholder="Digite seu comentário aqui..." name="box-comentarios"></textarea>
+					<button class="botao-enviar" type="button" onclick="enviarComentario()">Enviar</button>
+				</div>
+			</form>
+	</main>
+
+	<!-- Alteração do tema -->
+	<label for="page-mode">Tema:</label>
+	<select id="page-mode" onchange="MudarCorPagina()">
+		<option value="normal">Claro</option>
+		<option value="customizado">Escuro</option>
+	</select>
+	<footer>By: Gabriel Saraiva & Olga Maria</footer>
+</body>
+</html>

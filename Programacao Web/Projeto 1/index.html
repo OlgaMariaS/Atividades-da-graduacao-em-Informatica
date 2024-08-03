@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curso de informática</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="javascript/index.js"></script>
+</head>
+
+<body>
+  <header class="headerPrincipal">
+    <div class="logo">
+      <a href="index.html"><img src="img/logo_uem.png" alt="Logo do Site"></a>
+    </div>
+    <div class="nome-site">
+      <h1>Curso de informática - Google Workspace</h1>
+    </div>
+  </header>
+
+  <div id="menu">
+    <a href="index.html"">Home</a>
+    <a href="pagina_inicial/login.html"">Login</a>
+    <a href="pagina_inicial/cadastro.html">Cadastre-se</a>
+    <a href="pagina_inicial/saibaMais.html">Saiba mais</a>
+  </div>
+
+  <main id="servicos">
+    <div class="servico">
+      <img class="imagem1" src="" alt="">
+      <div class="alinha">
+        <h2>DIN na comunidade</h2>
+        <p>Descrição sobre a disciplina DIN na comunidade</p>
+        <button class="btn-servicos">
+          <a href="https://drive.google.com/file/d/1OBZUjLfxHYYRES4EvVsCNFgJkt_1eDDO/view" target="_blank">Saiba mais</a>
+        </button>
+      </div>
+    </div>
+
+    <div class="servico">
+      <img class="imagem2" src="" alt="">
+      <div class="alinha1">
+        <h2>PROJETO</h2>
+        <p>Informações sobre o curso de informática</p>
+        <button class="btn-servicos">
+          <a href="pagina_inicial/saibaMais.html">Saiba mais</a>
+        </button>
+      </div>
+    </div>
+
+    <div class="servico">
+      <img class="imagem3" src="imagem/vet.jpg" alt="">
+      <div class="alinha2">
+        <h2>Informática - UEM</h2>
+        <p>Descrição sobre o curso de bacharelado em informática.</p>
+        <button class="btn-servicos">
+          <a href="https://www.uem.br/din/graduacao/informatica/informatica" target="_blank">Saiba mais</a>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Alteração do tema -->
+  <label for="page-mode">Tema:</label>
+  <select id="page-mode" onchange="MudarCorPagina()">
+    <option value="normal">Claro</option>
+    <option value="customizado">Escuro</option>
+  </select>
+
+  <footer>By: Gabriel Saraiva & Olga Maria</footer>
+</body>
+</html>

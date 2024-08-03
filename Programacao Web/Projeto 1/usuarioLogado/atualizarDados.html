@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Atualizar dados do usuário</title>
+	<link href="/css/styles.css" rel="stylesheet" type="text/css" />
+	<script src="/javascript/editar.js"></script>
+</head>
+
+<body>
+	<header class="headerCadastro">
+		<div class="logo">
+			<a href="/index.html"><img src="/img/logo_uem.png" alt="Logo do Site"></a>
+		</div>
+		<div class="nome-site">
+			<h1>Atualize seus dados</h1>
+		</div>
+		<div class="user-info">
+			<a href="home.html"><img src="/img/2993685_brand_brands_google_logo_logos_icon.png" alt="Imagem Aleatoria" id="user-photo"></a>
+			<p id="user-login-info">Usuário não autenticado</p>
+		</div>
+	</header>
+  
+	<div id="menu">
+		<a href="usuarioLogado.html">Home</a>
+		<a href="curso.html">Curso</a>
+		<a href="atualizarDados.html">Atualizar Dados</a>
+		<a href="avaliacao.html">Avaliar Curso</a>
+		<a href="/index.html">Sair</a>
+	</div>
+  
+	<main class="mainCadastro">
+		<form id="cadastro-form">
+			<label for="nome">Nome:</label>
+			<input type="text" id="nome" name="nome" required><br>
+      
+			<label for="email">Email:</label>
+			<input type="email" id="email" name="email" required><br>
+      
+			<label for="senha">Senha:</label>
+			<input type="password" id="senha" name="senha" required><br>
+      
+			<label for="telefone">Telefone:</label>
+			<input type="tel" id="telefone" name="telefone"><br>
+      
+			<label for="cidade">Cidade:</label>
+			<input type="text" id="cidade" name="cidade"><br>
+      
+			<button type="button" onclick="editar()">Salvar</button>
+		</form>
+	</main>
+  
+	<!-- Alteração do tema -->
+	<label for="page-mode">Tema:</label>
+	<select id="page-mode" onchange="MudarCorPagina()">
+		<option value="normal">Claro</option>
+		<option value="customizado">Escuro</option>
+	</select>
+	<footer>By: Gabriel Saraiva & Olga Maria</footer>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro Cliente</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/javascript/cadastro.js"></script>
+</head>
+
+<body>
+  <header class="headerCadastro">
+    <div class="logo">
+      <a href="index.html"><img src="/img/logo_uem.png" alt="Logo do Site"></a>
+    </div>
+    <div class="nome-site">
+      <h1>Cadastra-se para curso de informática</h1>
+    </div>
+  </header>
+
+  <div id="menu">
+    <a href="/index.html">Home</a>
+    <a href="login.html">Login</a>
+    <a href="cadastro.html">Cadastre-se</a>
+    <a href="saibaMais.html">Saiba mais</a>
+  </div>
+
+  <main class="mainCadastro">
+    <form id="cadastro-form">
+      <label for="nome">Nome:</label>
+      <input type="text" id="nome" name="nome" required><br>
+
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required><br>
+
+      <label for="senha">Senha:</label>
+      <input type="password" id="senha" name="senha" required><br>
+
+      <label for="confirmar-senha">Confirmar Senha:</label>
+      <input type="password" id="confirmar-senha" name="confirmar-senha" required><br>
+
+      <label for="telefone">Telefone:</label>
+      <input type="tel" id="telefone" name="telefone"><br>
+
+      <label for="cidade">Cidade:</label>
+      <input type="text" id="cidade" name="cidade"><br>
+      
+      <button type="button" onclick="cadastrar()">Cadastrar</button>
+    </form>
+  </main>
+
+  <!-- Alteração do tema -->
+  <label for="page-mode">Tema:</label>
+  <select id="page-mode" onchange="MudarCorPagina()">
+    <option value="normal">Claro</option>
+    <option value="customizado">Escuro</option>
+  </select>
+  <footer>By: Gabriel Saraiva & Olga Maria</footer>
+</body>
+</html>

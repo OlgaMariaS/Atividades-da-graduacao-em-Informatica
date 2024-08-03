@@ -1,0 +1,5 @@
+O 'storedUser' JSON, conforme o código que utilizei no login.js, guarda apenas o último login, substituindo qualquer login anterior. Se você quiser armazenar um histórico de logins, precisará modificar o código para armazenar múltiplos registros de login. Um forma de fazer isso, para possivelmente utilizarmos no trabalho:
+    1. Armazenar múltiplos logins: Em vez de sobrescrevermos o valor no 'localStorage', podemos guargar em um array de logins ou até mesmo guardar em um BD, neste caso iremos trabalhar com o PHP.  
+    2. Adicionar um novo login ao array: Sempre que um novo login foi realizado, adicione-o ao array
+
+    

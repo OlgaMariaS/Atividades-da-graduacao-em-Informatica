@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Login</title>
+	<link rel="stylesheet" href="/css/styles.css">
+	<script src="/javascript/login.js"></script>
+</head>
+
+<body>
+	<header class="headerLogin">
+		<div class="logo">
+			<a href="index.html"><img src="/img/logo_uem.png" alt="Logo do Site"></a>
+		</div>
+		<div class="nome-site">
+			<h1>Login</h1>
+		</div>
+	</header>
+    
+	<div id="menu">
+		<a href="/index.html">Home</a>
+		<a href="login.html">Login</a>
+		<a href="cadastro.html">Cadastre-se</a>
+		<a href="saibaMais.html">Saiba mais</a>
+	</div>
+    
+	<main class="mainLogin">
+		<form id="loginForm">
+			<label for="usuario">Usuário:</label>
+			<input type="text" id="login" name="login" required><br>
+			<label for="senha">Senha:</label>
+			<input type="password" id="senha" name="senha" required><br>
+			<button type="button" onclick="autenticar()">Entrar</button>
+		</form>
+	</main>
+    
+	<!-- Alteração do tema -->
+	<label for="page-mode">Tema:</label>
+	<select id="page-mode" onchange="MudarCorPagina()">
+		<option value="normal">Claro</option>
+		<option value="customizado">Escuro</option>
+	</select>
+	<footer>By: Gabriel Saraiva & Olga Maria</footer>
+</body>
+
+</html>
