@@ -1,0 +1,27 @@
+#lang racket
+(require rackunit)
+;;Projete uma função que receba como entrada uma árvore binária t e um número n e devolva uma nova
+;árvore binária que é como t mas com n somado a cada elemento.
+
+(struct no (campo esq dir) #:transparent)
+
+(define (arvoreXn arv n)
+  (cond
+    [(empty? arv) empty]
+    [else
+     (no (* (no-campo arv) n)
+         (arvoreXn (no-esq arv) n)
+         (arvoreXn (no-dir arv) n))]))
+
+(define no6 (no 10 empty empty))
+(define no5 (no 5 empty empty))
+(define no4 (no 4 empty empty))
+(define no3 (no 3 empty no6))
+(define no2 (no 2 no4 no5))
+(define no1 (no 1 no2 no3))
+
+(arvoreXn no1 2) 
+
+;     1
+;  2    3
+;4  5    10 

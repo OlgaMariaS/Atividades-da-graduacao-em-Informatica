@@ -1,3 +1,0 @@
-Subtração de 1: Construa uma Máquina de Turing determinística transdutora que receba como entrada uma sequência binária e produza como resultado o valor binário subtraído de uma unidade.
-
-Divisão por 2: Construa uma Máquina de Turing determinística transdutora que receba como entrada uma sequência binária e produza como resultado o valor binário dividido por 2 (truncando a parte decimal, se houver).
