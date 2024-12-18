@@ -1,36 +1,32 @@
-import pandas as pd
+def RadixSort(lista):
+    tamanho_maximo = max(len(s) for s in lista)
 
-def RadixSort(arquivo_xls, coluna):
-    dados = pd.read_excel(arquivo_xls)
-    lista = dados[coluna].tolist()
-
-    def counting_sort(lista, exp):
+    def counting_sort(lista, posicao):
         n = len(lista)
-        output = [0] * n
-        count = [0] * 10
+        output = ["" for _ in range(n)]
+        count = [0] * 256 # ASCII
 
-        for i in lista:
-            index = i // exp
-            count[index % 10] += 1
+        # Contar ocorrências de cada caractere na posição especificada
+        for string in lista:
+            index = ord(string[posicao]) if posicao < len(string) else 0
+            count[index] += 1
 
-        for i in range(1, 10):
+        # Calcular posições acumuladas
+        for i in range(1, 256):
             count[i] += count[i - 1]
 
-        i = n - 1
-        while i >= 0:
-            index = lista[i] // exp
-            output[count[index % 10] - 1] = lista[i]
-            count[index % 10] -= 1
-            i -= 1
+        # Construir a saída, percorrendo de trás para frente para estabilidade
+        for string in reversed(lista):
+            index = ord(string[posicao]) if posicao < len(string) else 0
+            output[count[index] - 1] = string
+            count[index] -= 1
 
+        # Copiar a saída de volta para a lista original
         for i in range(n):
             lista[i] = output[i]
 
-    maximo = max(lista)
-    exp = 1
-    while maximo // exp > 0:
-        counting_sort(lista, exp)
-        exp *= 10
+    # Ordenar da última posição para a primeira
+    for posicao in range(tamanho_maximo - 1, -1, -1):
+        counting_sort(lista, posicao)
 
-    dados[coluna] = lista
-    return dados
+    return lista

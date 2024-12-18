@@ -1,9 +1,5 @@
-import pandas as pd
-
-def HeapSort(arquivo_xls, coluna):
-    dados = pd.read_excel(arquivo_xls)
-    lista = dados[coluna].tolist()
-
+def HeapSort(lista):
+    
     def heapify(lista, n, i):
         maior = i
         l = 2 * i + 1
@@ -24,5 +20,4 @@ def HeapSort(arquivo_xls, coluna):
         lista[i], lista[0] = lista[0], lista[i]
         heapify(lista, i, 0)
 
-    dados[coluna] = lista
-    return dados
+    return lista

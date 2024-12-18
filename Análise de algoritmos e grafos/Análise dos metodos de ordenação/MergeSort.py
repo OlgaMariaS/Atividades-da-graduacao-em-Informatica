@@ -1,9 +1,5 @@
-import pandas as pd
-
-def MergeSort(arquivo_xls, coluna):
-    dados = pd.read_excel(arquivo_xls)
-    lista = dados[coluna].tolist()
-
+def MergeSort(lista):
+    
     def mergesort(lista):
         if len(lista) > 1:
             meio = len(lista) // 2
@@ -32,7 +28,5 @@ def MergeSort(arquivo_xls, coluna):
                 lista[k] = dir[j]
                 j += 1
                 k += 1
-
     mergesort(lista)
-    dados[coluna] = lista
-    return dados
+    return lista
