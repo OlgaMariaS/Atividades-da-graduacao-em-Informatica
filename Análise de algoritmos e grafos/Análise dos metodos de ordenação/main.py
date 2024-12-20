@@ -1,6 +1,6 @@
 import time, pandas;
 from BubbleSort     import BubbleSort;
-from InserctionSort import InserctionSort;
+from InsertionSort import InsertionSort;
 from SelectionSort  import SelectionSort;
 from ShellSort      import ShellSort;
 from QuickSort      import QuickSort;
@@ -12,8 +12,8 @@ atributo_para_ordenacao          = "nome";
 base_de_dados_ordem_aleatoria    = pandas.read_excel("cursos-prouni-aleatorio.xlsx")[atributo_para_ordenacao].tolist(); 
 base_de_dados_ordem_crescente    = pandas.read_excel("cursos-prouni-crescente.xlsx")[atributo_para_ordenacao].tolist(); 
 base_de_dados_ordem_decrescente  = pandas.read_excel("cursos-prouni-decrescente.xlsx")[atributo_para_ordenacao].tolist(); 
-metodos_de_ordenacao             = ['BubbleSort','InserctionSort','SelectionSort','ShellSort','QuickSort','HeapSort','MergeSort','RadixSort'];
-funcoes_ordenacao                = [ BubbleSort,  InserctionSort,  SelectionSort,  ShellSort,  QuickSort,  HeapSort,  MergeSort,  RadixSort];
+metodos_de_ordenacao             = ['BubbleSort','InsertionSort','SelectionSort','ShellSort','QuickSort','HeapSort','MergeSort','RadixSort'];
+funcoes_ordenacao                = [ BubbleSort,  InsertionSort,  SelectionSort,  ShellSort,  QuickSort,  HeapSort,  MergeSort,  RadixSort];
 qtde_metodos                     = len(metodos_de_ordenacao);
 tempos_de_execucao_aleatorio     = [];
 tempos_de_execucao_crescente     = [];

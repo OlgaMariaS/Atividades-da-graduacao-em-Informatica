@@ -1,4 +1,4 @@
-def InserctionSort(lista):
+def InsertionSort(lista):
 
     for i in range(1, len(lista)):
         chave = lista[i]
