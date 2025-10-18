@@ -1,5 +1,6 @@
 from sys import argv
-from lexico import lexer, calculate_column
+from lexico import lexer
+from utils import calculate_column
 
 if len(argv) == 2:
     with open(argv[1], 'r') as entrada:
@@ -21,4 +22,4 @@ else:
 
 
 # PRA TABELA DE SIMBOLOS USAR DICT
-# 
+# python main.py ProgramasTascalTeste/P1.tascal

@@ -1,4 +1,5 @@
 import ply.lex as lex
+from utils import calculate_column
 
 # dictionary of reserved words
 reserved = {
@@ -40,7 +41,7 @@ t_GREATER = r'>='
 t_ATRIB   = r':='
 
 # NUM: Sequency of one or more digits
-def t_NUM(t): # Os números negativos não serão processados na fase léxica, mas sim na fase sintática.
+def t_NUM(t):
     r'\d+'
     t.value = int(t.value)
     return t
@@ -56,18 +57,18 @@ def t_newline(t):
     t.lexer.lineno += len(t.value)
     t.lexer.line_start = t.lexpos + len(t.value) # update line_start to count columns
 
-# Count columns in line
-def calculate_column(t, lexico):
-    line_start = getattr(lexico, 'line_start', 0)
-    return t.lexpos - line_start + 1
+# # Count columns in line
+# def calculate_column(t, lexico):
+#     line_start = getattr(lexico, 'line_start', 0)
+#     return t.lexpos - line_start + 1
 
 # Ignore spaces and tabulations
 t_ignore = ' \t'
 
 # Report error and ignore invalid simbol
 def t_error(t):
-    col = calculate_column(t, t.lexer)
-    print(f"ERRO: Símbolo ilegal {t.value[0]!r} na linha {t.lineno}, coluna {col}")
+    col = calculate_column(t)
+    print(f"ERRO LÉXICO: Símbolo ilegal {t.value[0]!r} na linha {t.lineno}, coluna {col}")
     t.lexer.skip(1)
 
 lexer = lex.lex()
