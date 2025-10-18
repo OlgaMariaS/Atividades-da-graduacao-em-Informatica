@@ -1,0 +1,8 @@
+
+1. Para executar, edite um arquivo com alguma sentença válida (arquivo "entradaOK") 
+   ou inválida ("entradaComErro"). 
+
+2. digite "python3 posfixo.py < entradaOk" ou "python3 posfixo.py < entradaComErro" 
+   para a entrada "a+a*a-a", o parser gera "AAA*+A-", e 
+   para a entrada "a+a*a--a", gera "ERRO de sintaxe perto de '-' AAA*+A"
+
