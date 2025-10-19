@@ -1,8 +1,7 @@
-import sys
-from enum import Enum
 import ply.yacc as yacc
-from lexico import lexer
-from utils import calculate_column
+from enum   import Enum
+from lexico import tokens
+from utils  import calculate_column
 
 class Tipo(Enum):
     INT  = 0
@@ -14,18 +13,19 @@ def nomeTipo(t: Tipo) -> str:
     if t is Tipo.BOOL: return 'bool'
     return "erro"
 
+# Regras de produção da gramática: 
 precedence = (
-    ('nonassoc', 'LESS', 'GREATER')
+    ('nonassoc', 'IFX'),
     ('nonassoc', 'ELSE'),
+    ('left', 'OR'),
     ('left', '+', '-'),
-    ('left', '*', '/'),
+    ('left', '*', 'DIV', 'AND'),
     ('right', 'UMINUS'),
 )
 
 def p_programa(p):
     "programa : PROGRAM ID ';' bloco '.'"
 
-# DÚVIDA DE VAR SOMENTE UM VEZ
 def p_bloco(p):
     '''bloco : secao_declaracao_vars comando_composto
              | comando_composto'''
@@ -77,7 +77,7 @@ def p_atribuicao(p):
     "atribuicao : ID ATRIB expr"
 
 def p_condicional(p):
-    '''condicional : IF expr THEN comando
+    '''condicional : IF expr THEN comando %prec IFX
                    | IF expr THEN comando ELSE comando'''
 
 def p_repeticao(p):
@@ -115,11 +115,9 @@ def p_expr_simples(p):
     
 def p_termo_vazio(p):
     "lista_termos : "
-    p[0] = []
 
 def p_termos_varios(p):
     "lista_termos : lista_termos operador_termo termo"
-    p[0] = p[1] + [(p[2], p[3])] 
 
 def p_operador_termo(p):
     '''operador_termo : '+'
@@ -135,13 +133,12 @@ def p_fator_vazio(p):
 
 def p_fator_varios(p):
     "lista_fatores : lista_fatores operador_fator fator"
-    p[0] = p[1] + [(p[2], p[3])] 
 
 def p_operador_fator(p):
     '''operador_fator : '*'
-                      | '/'
+                      | DIV
                       | AND '''
-        
+         
 def p_fator_id(p):
     "fator : ID"
 
@@ -158,7 +155,7 @@ def p_fator_not(p):
     "fator : NOT fator"
 
 def p_fator_neg(p):
-    "fator : '-' fator %prec UMINUS"
+    "fator : NEG fator %prec UMINUS"
 
 # Erro sintático
 def p_error(p):
@@ -168,16 +165,8 @@ def p_error(p):
     else:
         print("ERRO SINTÁTICO: fim inesperado de arquivo (EOF)")
 
-def erro_semantico(token, mensagem): # mensagem?
+def erro_semantico(token, mensagem):
     col = calculate_column(token)
     print(f"ERRO SEMÂNTICO: {mensagem} na linha {token.lineno}, coluna {col}")
 
-parser = yacc.yacc(start='program')
-
-# ---------- MAIN ----------
-def main():
-    data = sys.stdin.read()
-    parser.parse(data, lexer=lexer)
-
-if __name__ == "__parser__":
-    main()
+parser = yacc.yacc(start='programa')

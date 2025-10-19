@@ -24,6 +24,7 @@ reserved = {
     'not':      'NOT'
 }
 
+# professor falou que '.' deve ser t_DOT pq vai dar erro
 literals = [':','=',';','(',')','<', '>','*','+','-',',','.']
 
 tokens = (
@@ -33,12 +34,14 @@ tokens = (
    'LESS',
    'GREATER',
    'ATRIB',
+   'NEG'
 ) + tuple(reserved.values())
 
 t_DIF     = r'<>'
 t_LESS    = r'<='
 t_GREATER = r'>='
 t_ATRIB   = r':='
+t_NEG     = r'-'
 
 # NUM: Sequency of one or more digits
 def t_NUM(t):
