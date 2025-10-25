@@ -1,17 +1,10 @@
 import ply.yacc as yacc
 from enum   import Enum
 from lexico import tokens
-from utils  import calculate_column
+from utils  import calculate_column, TabelaSimbolos, erro_semantico
 
-class Tipo(Enum):
-    INT  = 0
-    BOOL = 1
-
-# Funções de erro semântico
-def nomeTipo(t: Tipo) -> str:
-    if t is Tipo.INT:  return 'int'
-    if t is Tipo.BOOL: return 'bool'
-    return "erro"
+# instância global da classe TabelaSimbolos
+tabela_simbolos = TabelaSimbolos()
 
 # Regras de produção da gramática: 
 precedence = (
@@ -24,11 +17,18 @@ precedence = (
 )
 
 def p_programa(p):
-    "programa : PROGRAM ID ';' bloco '.'"
+    "programa : programa_begin bloco DOT" 
+
+def p_programa_begin(p):
+    "programa_begin : PROGRAM ID ';'" 
 
 def p_bloco(p):
     '''bloco : secao_declaracao_vars comando_composto
              | comando_composto'''
+    # if len(p) == 2:
+    #     p[0] = p[1] + p[3]
+    # elif len(p) == 2:
+    #     p[0] = p[1] - p[3]
 
 def p_secao_declaracao_vars_uma(p):
     "secao_declaracao_vars : VAR declaracao_vars ';'"
@@ -38,12 +38,16 @@ def p_secao_declaracao_vars_varias(p):
 
 def p_declaracao_vars(p):
     "declaracao_vars : lista_ids ':' tipo"
+    # nome = p[1].value
+    # tipo = p[3]
+    # linha = p.lineno
+    # tabela_simbolos.inserir(nome, tipo, linha)
 
 def p_lista_ids(p):
     "lista_ids : ids"
 
 def p_id_um(p):
-    "ids : ID" 
+    "ids : ID"
 
 def p_id_varios(p):
     "ids : ID ',' ids"
@@ -157,16 +161,58 @@ def p_fator_not(p):
 def p_fator_neg(p):
     "fator : NEG fator %prec UMINUS"
 
+# =============================================================================================== #
+# Produções para sinalização de erros sintáticos  
+def p_programa_bloco_error(p):
+    "programa : programa_begin error DOT"
+    erro_sintatico(p, 2, "Erro no bloco de código")
+    # print(f"ERRO SINTÁTICO: Falta bloco de código na linha {p.lineno(2)}")
+    # parser.errok()
+
+def p_programa_begin_error(p):
+    "programa_begin : error ID ';' "
+    erro_sintatico(p, 1, "Falta program")
+    # print(f"ERRO SINTÁTICO: Falta program na linha {p.lineno(1)}")
+    # parser.errok()
+
+def p_programa_id_error(p):
+    "programa_begin : PROGRAM error ';' " 
+    erro_sintatico(p, 2, "Nome do programa não encontrado")
+    # print(f"ERRO SINTÁTICO: Nome do programa não encontrado na linha {p[2].lineno}")
+    # parser.errok()
+    
+def p_programa_pv_error(p):
+    "programa_begin : PROGRAM ID error" 
+    erro_sintatico(p, 3, "Esperado ';'")
+    # print(f"ERRO SINTÁTICO: Esperado ';' na linha {p[3].lineno}")
+    # parser.errok()
+
+def p_programa_dot_error(p):
+    "programa : programa_begin bloco error"
+    erro_sintatico(p, 3, "Esperado '.'")
+    # print(f"ERRO SINTÁTICO: Esperado '.' para finalizar o programa na linha {p.lineno(3)}")
+    # parser.errok()
+# =============================================================================================== #
 # Erro sintático
 def p_error(p):
-    if p:
-        col = calculate_column(p)
-        print(f"ERRO SINTÁTICO: Símbolo inesperado {p.value!r} na linha {p.lineno}, coluna {col}")
+    if p is None:
+        print("ERRO SINTÁTICO: fim de arquivo inesperado (EOF)")
+        return
+    # print(f"ERRO SINTÁTICO na linha {p.lineno}: token inesperado ({p.value!r})")
+
+def erro_sintatico(producao, posicao, mensagem):
+    if producao:
+        col = calculate_column(producao[posicao])
+        print(f"ERRO SINTÁTICO: {mensagem} na linha {producao.lineno(posicao)}, coluna {col}")
+        parser.errok()
     else:
         print("ERRO SINTÁTICO: fim inesperado de arquivo (EOF)")
 
-def erro_semantico(token, mensagem):
-    col = calculate_column(token)
-    print(f"ERRO SEMÂNTICO: {mensagem} na linha {token.lineno}, coluna {col}")
-
+global parser
 parser = yacc.yacc(start='programa')
+
+# Instancia o parser
+# def make_parser(start='programa'):
+#     global parser
+#     parser = yacc.yacc(start=start)
+#     return parser

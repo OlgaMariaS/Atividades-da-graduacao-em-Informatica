@@ -1,6 +1,6 @@
 from sys    import argv
 from lexico import lexer
-from parser import parser
+from parser import parser #, make_parser
 from utils  import calculate_column
 
 # TESTAR SOMENTE O LÉXICO
@@ -28,3 +28,9 @@ else:
 
 # python main.py ProgramasTascalTeste/P1.
 
+# if __name__ == "__main__":
+#     data = sys.stdin.read()
+#     parser = make_parser()
+#     parser.parse(data, lexer=make_lexer())
+#     if not tem_erro:
+#         print('Parabéns, seu programa está correto!')

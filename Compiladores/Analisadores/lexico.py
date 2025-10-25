@@ -5,10 +5,10 @@ from utils import calculate_column
 reserved = {
     'program':  'PROGRAM',
     'var':      'VAR',
-    'end':      'END',
     'read':     'READ',
     'write':    'WRITE',
     'begin':    'BEGIN',
+    'end':      'END',
     'integer':  'INT',
     'boolean':  'BOOL',
     'false':    'FALSE',
@@ -24,8 +24,7 @@ reserved = {
     'not':      'NOT'
 }
 
-# professor falou que '.' deve ser t_DOT pq vai dar erro
-literals = [':','=',';','(',')','<', '>','*','+','-',',','.']
+literals = ['(',')',':','=',';','<', '>','*','+','-',',']
 
 tokens = (
    'NUM',
@@ -34,7 +33,8 @@ tokens = (
    'LESS',
    'GREATER',
    'ATRIB',
-   'NEG'
+   'NEG',
+   'DOT',
 ) + tuple(reserved.values())
 
 t_DIF     = r'<>'
@@ -42,6 +42,7 @@ t_LESS    = r'<='
 t_GREATER = r'>='
 t_ATRIB   = r':='
 t_NEG     = r'-'
+t_DOT    = r'\.'
 
 # NUM: Sequency of one or more digits
 def t_NUM(t):
@@ -59,11 +60,6 @@ def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
     t.lexer.line_start = t.lexpos + len(t.value) # update line_start to count columns
-
-# # Count columns in line
-# def calculate_column(t, lexico):
-#     line_start = getattr(lexico, 'line_start', 0)
-#     return t.lexpos - line_start + 1
 
 # Ignore spaces and tabulations
 t_ignore = ' \t'
