@@ -333,7 +333,9 @@ def p_fator_neg(p):
         existe_erro = True
         erro_semantico(p.slice[1], "Operador de negação somente com inteiro")
     p[0] = Tipagem.INT
+
 # ============================ Produções para sinalização de erros sintáticos =============================== #
+
 def p_programa_begin_error(p):
     "programa_begin : error ID ';'"
     erro_sintatico(p, 1, "Falta program")
@@ -487,11 +489,11 @@ def p_error(p):
 
 def erro_sintatico(producao, posicao, mensagem):
     if producao:
+        global existe_erro
+        existe_erro = True
         col = calculate_column(producao[posicao])
         print(f"ERRO SINTÁTICO: {mensagem} na linha {producao.lineno(posicao)}, coluna {col}")
         parser.errok()
-        global existe_erro
-        existe_erro = True
     else:
         print("ERRO SINTÁTICO: fim inesperado de arquivo (EOF)")
 
