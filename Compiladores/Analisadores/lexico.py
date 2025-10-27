@@ -1,4 +1,5 @@
 import ply.lex as lex
+import sys
 from utils import calculate_column
 
 # dictionary of reserved words
@@ -70,4 +71,14 @@ def t_error(t):
     print(f"ERRO LÉXICO: Símbolo ilegal {t.value[0]!r} na linha {t.lineno}, coluna {col}")
     t.lexer.skip(1)
 
-lexer = lex.lex()
+# Instancia o lexer
+def make_lexer():
+    return lex.lex()
+    
+# Testar somente léxico
+if __name__ == '__lexico__':
+    data = sys.stdin.read()
+    lexer = make_lexer()
+    lexer.input(data)
+    for tok in lexer:
+        print(f'<{tok.type}, {tok.value!r}> na linha: {tok.lineno}')

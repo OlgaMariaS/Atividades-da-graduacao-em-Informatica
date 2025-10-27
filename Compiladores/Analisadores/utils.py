@@ -1,48 +1,57 @@
-# from lexico import reserved 
-from enum   import Enum
-import lexico
+from enum import Enum
 
 # Cálculo de coluna
 def calculate_column(token):
     line_start = token.lexer.lexdata.rfind('\n', 0, token.lexpos) + 1
     return token.lexpos - line_start + 1
 
-class Tipo(Enum):
-    INT  = 0
-    BOOL = 1
-
-def nomeTipo(t: Tipo) -> str:
-    if t is Tipo.INT:  return 'int'
-    if t is Tipo.BOOL: return 'bool'
-    return "erro"
-
 def erro_semantico(token, mensagem):
     col = calculate_column(token)
     print(f"ERRO SEMÂNTICO: {mensagem} na linha {token.lineno}, coluna {col}")
 
+class Tipagem(Enum):
+    INT  = 0
+    BOOL = 1
+    PRGM = 2
+
+def nome_do_tipo(t: Tipagem) -> str:
+    if t is Tipagem.INT:  return 'integer'
+    if t is Tipagem.BOOL: return 'boolean'
+    if t is Tipagem.PRGM: return 'programa'
+
 # Tabela de simbolos
-# Nome | Tipo | Endereço (L,C) | Valor
-
-#  -- O identificador do programa deve ser instalado na tabela de símbolos como sendo da categoria “programa”
+# Nome | Tipo | Linha | Coluna | Valor | Escopo
 class TabelaSimbolos:
-    def __init__(self):
+    def __init__(self, reserved=None):
         self.tabela = {}
+        self.reserved = reserved or {}
 
-    def inserir(self, nome, tipo=None, linha=None, coluna=None, valor=None):
+    def inserir(self, nome: str, tipo: Tipagem = None, linha: int = None, coluna: int = None, valor=None, escopo = 'global'):
         # Verifica se é palavra reservada
-        if nome in lexico.reserved:
-            raise Exception(f"ERRO SEMÂNTICO: '{nome}' é palavra reservada na (linha {linha}, coluna {coluna}).") # checar se pode parar com exception
+        if nome in self.reserved:
+            print(f"ERRO SEMÂNTICO: '{nome}' é palavra reservada na (linha {linha}, coluna {coluna}).")
+            return True
         # Verifica se a VAR já foi declarada
         elif nome in self.tabela:
-            raise Exception(f"Erro semântico: '{nome}' já declarado neste anteriormente (linha {linha}, coluna {coluna}).")
+            print(f"ERRO SEMÂNTICO: '{nome}' já declarado neste anteriormente (linha {linha}, coluna {coluna}).")
+            return True
+        # Verifica se o tipo é permitido
+        elif (tipo is not None) and (not isinstance(tipo, Tipagem)):
+            print(f"ERRO SEMÂNTICO: Tipo '{tipo}' inválido para '{nome}' na (linha {linha}, coluna {coluna}). "
+                            f"Tipos válidos: {[t.name for t in Tipagem]}")
+            return True
+        # Insere símbolo na tabela
         else:
-            # Insere símbolo na tabela
+            # Mapeia o tipo Enum para string
+            tipo_id = nome_do_tipo(tipo) if tipo is not None else None
             self.tabela[nome] = {
-                "tipo": tipo,
+                "tipo": tipo_id,
                 "linha": linha,
                 "coluna": coluna,
-                "valor": valor
+                "valor": valor,
+                "escopo": escopo
             }
+            return False
 
     # Busca símbolo na tabela
     def buscar(self, nome):
@@ -65,15 +74,8 @@ class TabelaSimbolos:
 
         conteudo.append("==================================\n")
 
-        # Salva no arquivo .txt
+        # Salva um arquivo .txt
         with open("tabela_simbolos.txt", "w", encoding="utf-8") as arquivo:
             arquivo.writelines(conteudo)
 
         print("Tabela de símbolos salva em 'tabela_simbolos.txt'.")
-
-# reserved = ["program", "begin", "end"]
-
-# tabela = TabelaSimbolos()
-# tabela.inserir("x", tipo="inteiro", linha=1, coluna=4, valor=10)
-# tabela.inserir("y", tipo="real", linha=2, coluna=8)
-# tabela.exibir_tabela()

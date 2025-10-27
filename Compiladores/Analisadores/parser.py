@@ -1,10 +1,11 @@
 import ply.yacc as yacc
-from enum   import Enum
-from lexico import tokens
-from utils  import calculate_column, TabelaSimbolos, erro_semantico
+from lexico import tokens, reserved
+from utils  import calculate_column, TabelaSimbolos, Tipagem, nome_do_tipo, erro_semantico
 
-# instância da classe TabelaSimbolos
-tabela_simbolos = TabelaSimbolos()
+# instância TabelaSimbolos
+tabela_simbolos = TabelaSimbolos(reserved)
+# Sinalizador de erros
+existe_erro = False
 
 # Regras de produção da gramática: 
 precedence = (
@@ -17,15 +18,19 @@ precedence = (
 )
 
 def p_programa(p):
-    "programa : programa_begin bloco DOT" 
+    "programa : programa_begin bloco DOT"
+    p[0] = None
 
 def p_programa_begin(p):
-    "programa_begin : PROGRAM ID ';'" 
+    "programa_begin : PROGRAM ID ';'"
+    simbolo = p[2]
+    col = calculate_column(p.slice[2])
+    tabela_simbolos.inserir(simbolo, Tipagem.PRGM, p.lineno(2), col)
+    p[0] = None 
 
 def p_bloco(p):
     '''bloco : secao_declaracao_vars comando_composto
              | comando_composto'''
-    # se faltar bloco dá erro
 
 def p_secao_declaracao_vars_uma(p):
     "secao_declaracao_vars : VAR declaracao_vars ';'"
@@ -35,23 +40,27 @@ def p_secao_declaracao_vars_varias(p):
 
 def p_declaracao_vars(p):
     "declaracao_vars : lista_ids ':' tipo"
-    # nome = p[1].value
-    # tipo = p[3]
-    # linha = p.lineno
-    # tabela_simbolos.inserir(nome, tipo, linha)
-
-def p_lista_ids(p):
-    "lista_ids : ids"
+    tipo = p[3]
+    global existe_erro
+    for id_token in p[1]:
+        col = calculate_column(id_token)
+        existe_erro = tabela_simbolos.inserir(id_token.value, tipo, id_token.lineno, col)
 
 def p_id_um(p):
-    "ids : ID"
+    "lista_ids : ID"
+    p[0] = [p.slice[1]]
 
 def p_id_varios(p):
-    "ids : ID ',' ids"
+    "lista_ids : ID ',' lista_ids"
+    p[0] = [p.slice[1]] + p[3]
 
 def p_tipo (p):
     '''tipo : BOOL 
             | INT'''
+    if p[1] == 'integer':
+        p[0] = Tipagem.INT
+    else:
+        p[0] = Tipagem.BOOL
 
 def p_logico(p):
     '''logico : TRUE 
@@ -59,12 +68,21 @@ def p_logico(p):
 
 def p_comando_composto(p):
     "comando_composto : BEGIN lista_comandos END"
+    global existe_erro
+
+    if not p[2]:  # lista_comandos vazia ou None
+        existe_erro = True
+        erro_semantico(p.slice[1], "O bloco BEGIN...END deve conter pelo menos um comando")
+    else:
+        p[0] = p[2]
 
 def p_lista_comandos_um(p):
     "lista_comandos : comando"
+    p[0] = p[1]
 
 def p_lista_comandos_varios(p):
     "lista_comandos : comando ';' lista_comandos"
+    p[0] = p[1]
 
 def p_comando (p):
     '''comando : atribuicao
@@ -73,35 +91,110 @@ def p_comando (p):
                | leitura
                | escrita
                | comando_composto'''
+    p[0] = p[1]
     
 def p_atribuicao(p):
     "atribuicao : ID ATRIB expr"
+    global existe_erro
+    id_info = tabela_simbolos.buscar(p[1])
+
+    if id_info is None:
+        existe_erro = True
+        erro_semantico(p.slice[1], f"Identificador '{p[1]}' não declarado anteriormente")
+    else:
+        tipo_var = id_info["tipo"]
+        tipo_expr = nome_do_tipo(p[3])
+        if tipo_var != tipo_expr:
+            existe_erro = True
+            erro_semantico(p.slice[1], f"Tipos incompatíveis: variável '{p[1]}' é {tipo_var}, mas expressão é {tipo_expr}")
+        else:
+            p[0] = p[1]
 
 def p_condicional(p):
     '''condicional : IF expr THEN comando %prec IFX
                    | IF expr THEN comando ELSE comando'''
+    global existe_erro
+    tipo_expr = p[2]
+
+    if tipo_expr is None:
+        existe_erro = True
+        erro_semantico(p.slice[1], "Expressão condicional inválida")
+    elif tipo_expr != Tipagem.BOOL:
+        existe_erro = True
+        erro_semantico(p.slice[1], "A condição do IF deve resultar em tipo lógico")
+    else:
+        p[0] = p[1]
 
 def p_repeticao(p):
-    "repeticao : WHILE expr DO comando "
+    "repeticao : WHILE expr DO comando"
+    global existe_erro
+    tipo_expr = p[2]
+
+    if tipo_expr is None:
+        existe_erro = True
+        erro_semantico(p.slice[1], "Expressão condicional inválida")
+    elif tipo_expr != Tipagem.BOOL:
+        existe_erro = True
+        erro_semantico(p.slice[1], "A condição do WHILE deve ser do tipo lógico")
+    else:
+        p[0] = p[1]
 
 def p_leitura(p):
     "leitura : READ '(' lista_ids ')' "
+    global existe_erro
+
+    for id_token in p[3]:
+        simbolo = tabela_simbolos.buscar(id_token.value)
+        if simbolo is None:
+            existe_erro = True
+            erro_semantico(id_token, f"Identificador '{id_token.value}' não declarado para leitura")
+        else:
+            p[0] = p[1]
 
 def p_escrita(p):
-    "escrita : WRITE '(' lista_expr ')' " 
+    "escrita : WRITE '(' lista_expr ')' "
+    global existe_erro
 
-def p_lista_expr(p):
-    "lista_expr : expressao"
+    for expr_tipo in p[3]:
+        if expr_tipo is None:
+            existe_erro = True
+            erro_semantico(p.slice[1], "Expressão inválida na escrita")
+        else:
+            p[0] = p[1]
 
+# retorna um lista de expressões
 def p_lista_expr_uma(p):
-    "expressao : expr"
+    "lista_expr : expr"
+    p[0] = [p[1]]
 
 def p_lista_expr_varias(p):
-    "expressao : expressao expr ',' "
+    "lista_expr : expr ',' lista_expr"
+    p[0] = [p[1]] + p[3]
 
 def p_expr(p):
     '''expr : expr_simples
             | expr_simples relacao expr_simples'''
+    global existe_erro
+
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        tipo_esq = p[1]
+        operador = p[2]
+        tipo_dir = p[3]
+
+        if tipo_esq is None or tipo_dir is None:
+            p[0] = None
+        elif operador in ['=', '<>']: # Igualdade/diferença as expressões devem ter tipos iguais
+            if tipo_esq != tipo_dir:
+                existe_erro = True
+                erro_semantico(p.slice[2], f"Comparação '{operador}' requer operandos do mesmo tipo")
+            p[0] = Tipagem.BOOL
+        else: # (<, >, <=, >=) 
+            if tipo_esq != Tipagem.INT or tipo_dir != Tipagem.INT:
+                existe_erro = True
+                erro_semantico(p.slice[2], f"Operador relacional '{operador}' somente com inteiros")
+            p[0] = Tipagem.BOOL
 
 def p_relacao(p):
     '''relacao : '='
@@ -110,34 +203,76 @@ def p_relacao(p):
                | LESS
                | '>'
                | GREATER '''
+    p[0] = p.slice[1]
 
 def p_expr_simples(p):
     "expr_simples : termo lista_termos"
-    
+    p[0] = p[1]
+
 def p_termo_vazio(p):
     "lista_termos : "
+    p[0] = None
 
 def p_termos_varios(p):
     "lista_termos : lista_termos operador_termo termo"
+    global existe_erro
+    tipo_esq = p[1]
+    operador = p[2]
+    tipo_dir = p[3]
+
+    if tipo_esq is None or tipo_dir is None:
+        p[0] = None
+    if operador in ['+', '-']:
+        if tipo_esq != Tipagem.INT or tipo_dir != Tipagem.INT:
+            existe_erro = True
+            erro_semantico(p.slice[2], f"Operação '{operador}' somente com inteiros")
+        p[0] = Tipagem.INT
+    elif operador == 'or':
+        if tipo_esq != Tipagem.BOOL or tipo_dir != Tipagem.BOOL:
+            existe_erro = True
+            erro_semantico(p.slice[2], "Operador 'or' somente com booleanos")
+        p[0] = Tipagem.BOOL
 
 def p_operador_termo(p):
     '''operador_termo : '+'
                       | '-'
                       | OR '''
+    p[0] = p.slice[1]
     
 def p_termo(p):
     "termo : fator lista_fatores"
+    p[0] = p[1]
     
 def p_fator_vazio(p):
     "lista_fatores : "
+    p[0] = None
 
 def p_fator_varios(p):
     "lista_fatores : lista_fatores operador_fator fator"
+    global existe_erro
+    tipo_esq = p[1]
+    operador = p[2]
+    tipo_dir = p[3]
+
+    if tipo_esq is None or tipo_dir is None:
+        p[0] = None
+        return
+    if operador.value in ['*', 'DIV']:
+        if tipo_esq != Tipagem.INT or tipo_dir != Tipagem.INT:
+            existe_erro = True
+            erro_semantico(operador, f"Operação '{operador}' somente com inteiros")
+        p[0] = Tipagem.INT
+    elif operador.value == 'and':
+        if tipo_esq != Tipagem.BOOL or tipo_dir != Tipagem.BOOL:
+            existe_erro = True
+            erro_semantico(operador, "Operador 'and' somente com booleanos")
+        p[0] = Tipagem.BOOL
 
 def p_operador_fator(p):
     '''operador_fator : '*'
                       | DIV
                       | AND '''
+    p[0] = p.slice[1]
          
 def p_fator(p):
     '''fator : fator_id
@@ -146,25 +281,48 @@ def p_fator(p):
              | fator_expr
              | fator_not
              | fator_neg '''
-
-def p_fator_id(p):
-    "fator_id : ID"
+    p[0] = p[1]
 
 def p_fator_num(p):
     "fator_num : NUM"
+    p[0] = Tipagem.INT
 
 def p_fator_log(p):
     "fator_log : logico"
+    p[0] = Tipagem.BOOL
+
+def p_fator_id(p):
+    "fator_id : ID"
+    simbolo = tabela_simbolos.buscar(p[1])
+    if simbolo:
+        p[0] = simbolo["tipo"]
+    else:
+        global existe_erro
+        existe_erro = True
+        erro_semantico(p.slice[1], f"Identificador '{p[1]}' não declarado")
+        p[0] = None
 
 def p_fator_expr(p):
     "fator_expr : '(' expr ')'"
+    p[0] = p[2]
 
 def p_fator_not(p):
     "fator_not : NOT fator"
+    global existe_erro
+    tipo = p[2]
+    if tipo != Tipagem.BOOL:
+        existe_erro = True
+        erro_semantico(p.slice[1], "Operador 'not' somente com booleano")
+    p[0] = Tipagem.BOOL
 
 def p_fator_neg(p):
     "fator_neg : NEG fator %prec UMINUS"
-
+    global existe_erro
+    tipo = p[2]
+    if tipo != Tipagem.INT:
+        existe_erro = True
+        erro_semantico(p.slice[1], "Operador de negação somente com inteiro")
+    p[0] = Tipagem.INT
 # ============================ Produções para sinalização de erros sintáticos =============================== #
 def p_programa_begin_error(p):
     "programa_begin : error ID ';' "
@@ -207,17 +365,17 @@ def p_declaracao_vars_dp_error(p):
     erro_sintatico(p, 2, "Esperado ':'")
 
 def p_id_um_error(p):
-    "ids : error"
+    "lista_ids : error"
     erro_sintatico(p, 1, "Identificador inválido")
 
-def p_id_varios_error(p):
-    "ids : error ',' ids"
-    erro_sintatico(p, 1, "Identificador inválido")
+# def p_id_varios_error(p):
+#     "lista_ids : error ',' lista_ids"
+#     erro_sintatico(p, 1, "Identificador inválido")
 
 # def p_id_varios_v_error(p):
-#     "ids : ID error ids"
+#     "lista_ids : ID error ids"
 #     erro_sintatico(p, 2, "Esperado ','")
-    
+
 # def p_logico(p):
 #     "logico : error"
 #     erro_sintatico(p, 1, "Valores lógicos inválidos")
@@ -307,6 +465,7 @@ def p_id_varios_error(p):
 # def p_fator_error(p):
 #     "fator : error"
 #     erro_sintatico(p, 1, "Fator inválido")
+
 # =============================================================================================== #
 # Erro sintático
 def p_error(p):
@@ -323,11 +482,11 @@ def erro_sintatico(producao, posicao, mensagem):
     else:
         print("ERRO SINTÁTICO: fim inesperado de arquivo (EOF)")
 
-global parser
-parser = yacc.yacc(start='programa')
-
 # Instancia o parser
-# def make_parser(start='programa'):
-#     global parser
-#     parser = yacc.yacc(start=start)
-#     return parser
+def make_parser(start='programa'):
+    global parser
+    parser = yacc.yacc(start=start)
+    return parser
+
+if existe_erro == False:
+    print('Programa executado com sucesso!')
