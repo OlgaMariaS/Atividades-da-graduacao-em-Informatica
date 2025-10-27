@@ -1,11 +1,13 @@
+import sys
 import ply.yacc as yacc
-from lexico import tokens, reserved
+from lexico import tokens, reserved, make_lexer
 from utils  import calculate_column, TabelaSimbolos, Tipagem, nome_do_tipo, erro_semantico
 
 # instância TabelaSimbolos
 tabela_simbolos = TabelaSimbolos(reserved)
 # Sinalizador de erros
 existe_erro = False
+parser = None
 
 # Regras de produção da gramática: 
 precedence = (
@@ -15,6 +17,7 @@ precedence = (
     ('left', '+', '-'),
     ('left', '*', 'DIV', 'AND'),
     ('right', 'UMINUS'),
+    ('nonassoc', 'LOWEST'),
 )
 
 def p_programa(p):
@@ -31,12 +34,15 @@ def p_programa_begin(p):
 def p_bloco(p):
     '''bloco : secao_declaracao_vars comando_composto
              | comando_composto'''
+    p[0] = None
 
 def p_secao_declaracao_vars_uma(p):
     "secao_declaracao_vars : VAR declaracao_vars ';'"
+    p[0] = None
 
 def p_secao_declaracao_vars_varias(p):
     "secao_declaracao_vars : VAR declaracao_vars ';' secao_declaracao_vars"
+    p[0] = None
 
 def p_declaracao_vars(p):
     "declaracao_vars : lista_ids ':' tipo"
@@ -65,19 +71,20 @@ def p_tipo (p):
 def p_logico(p):
     '''logico : TRUE 
               | FALSE'''
+    p[0] = None
 
 def p_comando_composto(p):
     "comando_composto : BEGIN lista_comandos END"
     global existe_erro
 
-    if not p[2]:  # lista_comandos vazia ou None
+    if p[1] != 'begin':
         existe_erro = True
-        erro_semantico(p.slice[1], "O bloco BEGIN...END deve conter pelo menos um comando")
+        erro_semantico(p.slice[1], "Deve existe um bloco BEGIN...END")
     else:
         p[0] = p[2]
 
 def p_lista_comandos_um(p):
-    "lista_comandos : comando"
+    "lista_comandos : comando %prec LOWEST" # menor precedencia
     p[0] = p[1]
 
 def p_lista_comandos_varios(p):
@@ -140,7 +147,7 @@ def p_repeticao(p):
         p[0] = p[1]
 
 def p_leitura(p):
-    "leitura : READ '(' lista_ids ')' "
+    "leitura : READ '(' lista_ids ')'"
     global existe_erro
 
     for id_token in p[3]:
@@ -164,7 +171,7 @@ def p_escrita(p):
 
 # retorna um lista de expressões
 def p_lista_expr_uma(p):
-    "lista_expr : expr"
+    "lista_expr : expr %prec LOWEST"
     p[0] = [p[1]]
 
 def p_lista_expr_varias(p):
@@ -325,7 +332,7 @@ def p_fator_neg(p):
     p[0] = Tipagem.INT
 # ============================ Produções para sinalização de erros sintáticos =============================== #
 def p_programa_begin_error(p):
-    "programa_begin : error ID ';' "
+    "programa_begin : error ID ';'"
     erro_sintatico(p, 1, "Falta program")
 
 def p_programa_id_error(p):
@@ -333,12 +340,12 @@ def p_programa_id_error(p):
     erro_sintatico(p, 2, "Nome do programa não encontrado")
     
 def p_programa_pv_error(p):
-    "programa_begin : PROGRAM ID error" 
+    "programa_begin : PROGRAM ID error"
     erro_sintatico(p, 3, "Esperado ';'")
 
 def p_programa_dot_error(p):
     "programa : programa_begin bloco error"
-    erro_sintatico(p, 3, "Esperado '.'")
+    erro_sintatico(p, 3, "Esperado '.' no fim do arquivo")
 
 def p_secao_declaracao_vars_uma_error(p):
     "secao_declaracao_vars : error declaracao_vars ';'"
@@ -368,87 +375,83 @@ def p_id_um_error(p):
     "lista_ids : error"
     erro_sintatico(p, 1, "Identificador inválido")
 
-# def p_id_varios_error(p):
-#     "lista_ids : error ',' lista_ids"
-#     erro_sintatico(p, 1, "Identificador inválido")
-
-# def p_id_varios_v_error(p):
-#     "lista_ids : ID error ids"
-#     erro_sintatico(p, 2, "Esperado ','")
-
-# def p_logico(p):
-#     "logico : error"
-#     erro_sintatico(p, 1, "Valores lógicos inválidos")
+def p_id_varios_error(p):
+    "lista_ids : error ',' lista_ids"
+    erro_sintatico(p, 1, "Na declaração de variáveis")
 
 # def p_comando_composto_begin_error(p):
 #     "comando_composto : error lista_comandos END"
 #     erro_sintatico(p, 1, "Esperado BEGIN no ínicio do bloco")
 
-# def p_comando_composto_end_error(p):
-#     "comando_composto : BEGIN lista_comandos error"
-#     erro_sintatico(p, 3, "Esperado END no fim do bloco")
+def p_comando_composto_end_error(p):
+    "comando_composto : BEGIN lista_comandos error"
+    erro_sintatico(p, 3, "Esperado END no fim do bloco")
 
-# def p_lista_comandos_varios_error(p):
-#     "lista_comandos : comando error lista_comandos"
-#     erro_sintatico(p, 2, "Esperado ';'")
+def p_lista_comandos_varios_error(p):
+    "lista_comandos : comando error lista_comandos"
+    erro_sintatico(p, 2, "Esperado ';'")
     
-# def p_atribuicao_id_error(p):
-#     "atribuicao : error ATRIB expr"
-#     erro_sintatico(p, 1, "Identificador inválido")
+def p_atribuicao_id_error(p): #  Alerta erro caso não seja declarado variável
+    "atribuicao : error ATRIB expr"
+    erro_sintatico(p, 1, "Identificador inválido")
 
-# def p_atribuicao_atrib_error(p):
-#     "atribuicao : ID error expr"
-#     erro_sintatico(p, 2, "Esperado '='")
+def p_atribuicao_atrib_error(p):
+    "atribuicao : ID error expr"
+    erro_sintatico(p, 2, "Esperado ':=' para atribuição")
 
-# def p_condicional_if_error(p):
-#     '''condicional : error expr THEN comando %prec IFX
-#                    | error expr THEN comando ELSE comando'''
-#     erro_sintatico(p, 1, "Esperado IF")
+def p_condicional_if_error(p):
+    '''condicional : error expr THEN comando %prec IFX
+                   | error expr THEN comando ELSE comando'''
+    erro_sintatico(p, 1, "Esperado IF")
 
-# def p_condicional_then_error(p):
-#     '''condicional : IF expr error comando %prec IFX
-#                    | IF expr error comando ELSE comando'''
-#     erro_sintatico(p, 3, "Esperado THEN")
+def p_condicional_then_error(p):
+    '''condicional : IF expr error comando %prec IFX
+                   | IF expr error comando ELSE comando'''
+    erro_sintatico(p, 3, "Esperado THEN")
 
-# def p_condicional_else_error(p):
-#     '''condicional : IF expr THEN comando error comando'''
-#     erro_sintatico(p, 5, "Esperado ELSE")
+def p_condicional_else_error(p):
+    '''condicional : IF expr THEN comando error comando'''
+    erro_sintatico(p, 5, "Esperado ELSE")
 
-# def p_repeticao_while_error(p):
-#     "repeticao : error expr DO comando "
-#     erro_sintatico(p, 1, "Esperado WHILE")
+def p_repeticao_while_error(p):
+    "repeticao : error expr DO comando "
+    erro_sintatico(p, 1, "Esperado WHILE")
 
-# def p_repeticao_do_error(p):
-#     "repeticao : WHILE expr DO comando "
-#     erro_sintatico(p, 3, "Esperado DO")
+def p_repeticao_do_error(p):
+    "repeticao : WHILE expr error comando "
+    erro_sintatico(p, 3, "Esperado DO com o comando while")
 
 # def p_leitura_read_error(p):
 #     "leitura : error '(' lista_ids ')' "
 #     erro_sintatico(p, 1, "Esperado READ")
 
-# def p_leitura_l_error(p):
-#     "leitura : READ error lista_ids ')' "
-#     erro_sintatico(p, 2, "Esperado '()'")
+def p_leitura_l_error(p):
+    "leitura : READ error lista_ids ')' "
+    erro_sintatico(p, 2, "Esperado '('")
 
-# def p_leitura_r_error(p):
-#     "leitura : READ '(' lista_ids error "
-#     erro_sintatico(p, 4, "Esperado ')'")
+def p_leitura_r_error(p):
+    "leitura : READ '(' lista_ids error "
+    erro_sintatico(p, 4, "Esperado ')'")
 
 # def p_escrita_write_error(p):
 #     "escrita : error '(' lista_expr ')'"
 #     erro_sintatico(p, 1, "Esperado WRITE")
 
-# def p_escrita_l_error(p):
-#     "escrita : WRITE error lista_expr ')'"
-#     erro_sintatico(p, 2, "Esperado '('")
+def p_escrita_l_error(p):
+    "escrita : WRITE error lista_expr ')'"
+    erro_sintatico(p, 2, "Esperado '('")
 
-# def p_escrita_r_error(p):
-#     "escrita : WRITE '(' lista_expr error"
-#     erro_sintatico(p, 4, "Esperado )")
+def p_escrita_r_error(p):
+    "escrita : WRITE '(' lista_expr error"
+    erro_sintatico(p, 4, "Esperado )")
+
+def p_lista_expr_uma_error(p):
+    "lista_expr : error"
+    erro_sintatico(p, 1, "Problema nas expressões")
 
 # def p_lista_expr_varias_error(p):
-#     "expressao : expressao expr error"
-#     erro_sintatico(p, 3, "Esperado ','")
+#     "lista_expr : expr error lista_expr"
+#     erro_sintatico(p, 2, "Esperado ','")
 
 # def p_relacao_error(p):
 #     "relacao : error"
@@ -466,9 +469,18 @@ def p_id_um_error(p):
 #     "fator : error"
 #     erro_sintatico(p, 1, "Fator inválido")
 
+def p_fator_expr_error(p):
+    "fator_expr : '(' error ')'"
+    erro_sintatico(p, 2, "Expressão inválida entre parênteses")
+
+def p_fator_expr_r_error(p):
+    "fator_expr : '(' expr error"
+    erro_sintatico(p, 3, "Esperado um ')'")
 # =============================================================================================== #
 # Erro sintático
 def p_error(p):
+    global existe_erro
+    existe_erro = True
     if p is None:
         print("ERRO SINTÁTICO: fim de arquivo inesperado (EOF)")
         return
@@ -479,14 +491,22 @@ def erro_sintatico(producao, posicao, mensagem):
         col = calculate_column(producao[posicao])
         print(f"ERRO SINTÁTICO: {mensagem} na linha {producao.lineno(posicao)}, coluna {col}")
         parser.errok()
+        global existe_erro
+        existe_erro = True
     else:
         print("ERRO SINTÁTICO: fim inesperado de arquivo (EOF)")
 
 # Instancia o parser
 def make_parser(start='programa'):
     global parser
+    global existe_erro 
     parser = yacc.yacc(start=start)
-    return parser
+    return parser, existe_erro
 
-if existe_erro == False:
-    print('Programa executado com sucesso!')
+# Testar somente parser
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    parser, existe_erro = parser.make_parser()
+    parser.parse(data, lexer=make_lexer())
+    if not existe_erro: 
+        print('Programa executado com sucesso!')

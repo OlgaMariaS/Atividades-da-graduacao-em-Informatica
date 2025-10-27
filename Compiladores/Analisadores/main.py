@@ -1,16 +1,22 @@
-from sys    import argv
+from sys import argv
 import lexico
-import parser as sintatico
+import parser
+
 
 if __name__ == "__main__":
     if len(argv) == 2:
-        with open(argv[1], 'r') as input:
-            data = input.read()
-            parser = sintatico.make_parser()
-            lexer = lexico.make_lexer()
-            parser.parse(data, lexer)
+        with open(argv[1], 'r') as input_file:
+            data = input_file.read()
             
-            if (lexico.existe_erro == False) and (sintatico.existe_erro == False):
+            lexer = lexico.make_lexer()
+            parser, existe_erro = parser.make_parser()
+
+            # Executa a análise
+            parser.parse(data, lexer)
+
+            if not existe_erro:
                 print('Programa executado com sucesso!')
+            else:
+                print('Erros encontrados durante a execução.')
     else:
         print('Necessário informar o arquivo .tascal')
