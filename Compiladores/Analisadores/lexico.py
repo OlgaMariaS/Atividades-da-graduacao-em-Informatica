@@ -2,6 +2,9 @@ import ply.lex as lex
 import sys
 from utils import calculate_column
 
+# Sinalizador de erros
+existe_erro = False
+
 # dictionary of reserved words
 reserved = {
     'program':  'PROGRAM',
@@ -68,7 +71,10 @@ t_ignore = ' \t'
 # Report error and ignore invalid simbol
 def t_error(t):
     col = calculate_column(t)
+    global existe_erro
+    existe_erro = True
     print(f"ERRO LÉXICO: Símbolo ilegal {t.value[0]!r} na linha {t.lineno}, coluna {col}")
+    
     t.lexer.skip(1)
 
 # Instancia o lexer
