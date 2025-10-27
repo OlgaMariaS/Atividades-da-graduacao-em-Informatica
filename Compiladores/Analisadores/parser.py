@@ -32,16 +32,16 @@ def p_programa_begin(p):
     p[0] = None 
 
 def p_bloco(p):
-    '''bloco : secao_declaracao_vars comando_composto
+    '''bloco : VAR secao_declaracao_vars comando_composto
              | comando_composto'''
     p[0] = None
 
 def p_secao_declaracao_vars_uma(p):
-    "secao_declaracao_vars : VAR declaracao_vars ';'"
+    "secao_declaracao_vars : declaracao_vars ';'"
     p[0] = None
 
 def p_secao_declaracao_vars_varias(p):
-    "secao_declaracao_vars : VAR declaracao_vars ';' secao_declaracao_vars"
+    "secao_declaracao_vars : declaracao_vars ';' secao_declaracao_vars"
     p[0] = None
 
 def p_declaracao_vars(p):
@@ -103,17 +103,18 @@ def p_comando (p):
 def p_atribuicao(p):
     "atribuicao : ID ATRIB expr"
     global existe_erro
-    id_info = tabela_simbolos.buscar(p[1])
+    id_tipo = tabela_simbolos.buscar(p[1])
 
-    if id_info is None:
+    if id_tipo is None:
         existe_erro = True
         erro_semantico(p.slice[1], f"Identificador '{p[1]}' não declarado anteriormente")
     else:
-        tipo_var = id_info["tipo"]
-        tipo_expr = nome_do_tipo(p[3])
+        tipo_var = Tipagem.INT if (id_tipo["tipo"] == 'integer') else Tipagem.BOOL
+        tipo_expr = p[3]
+
         if tipo_var != tipo_expr:
             existe_erro = True
-            erro_semantico(p.slice[1], f"Tipos incompatíveis: variável '{p[1]}' é {tipo_var}, mas expressão é {tipo_expr}")
+            erro_semantico(p.slice[1], f"Tipos incompatíveis: variável '{p[1]}' é {nome_do_tipo(tipo_var)}, mas expressão é {nome_do_tipo(tipo_expr)}")
         else:
             p[0] = p[1]
 
@@ -192,15 +193,17 @@ def p_expr(p):
 
         if tipo_esq is None or tipo_dir is None:
             p[0] = None
-        elif operador in ['=', '<>']: # Igualdade/diferença as expressões devem ter tipos iguais
+        elif operador.value in ['=', '<>']: # Igualdade/diferença as expressões devem ter tipos iguais
             if tipo_esq != tipo_dir:
                 existe_erro = True
-                erro_semantico(p.slice[2], f"Comparação '{operador}' requer operandos do mesmo tipo")
+                # erro_semantico(p.slice[2], f"Comparação '{operador.value}' requer operandos do mesmo tipo")
+                print(f"ERRO SEMÂNTICO: Comparação '{operador.value}' requer operandos do mesmo tipo na linha {operador.lineno}")
             p[0] = Tipagem.BOOL
         else: # (<, >, <=, >=) 
             if tipo_esq != Tipagem.INT or tipo_dir != Tipagem.INT:
                 existe_erro = True
-                erro_semantico(p.slice[2], f"Operador relacional '{operador}' somente com inteiros")
+                # erro_semantico(operador, f"Operador relacional '{operador}' somente com inteiros") - Erro de tipo
+                print(f"ERRO SEMÂNTICO: Operador relacional '{operador.value}' somente com inteiros na linha {operador.lineno}")
             p[0] = Tipagem.BOOL
 
 def p_relacao(p):
@@ -302,7 +305,7 @@ def p_fator_id(p):
     "fator_id : ID"
     simbolo = tabela_simbolos.buscar(p[1])
     if simbolo:
-        p[0] = simbolo["tipo"]
+        p[0] = Tipagem.INT if (simbolo["tipo"] == 'integer') else Tipagem.BOOL
     else:
         global existe_erro
         existe_erro = True
@@ -347,22 +350,18 @@ def p_programa_dot_error(p):
     "programa : programa_begin bloco error"
     erro_sintatico(p, 3, "Esperado '.' no fim do arquivo")
 
-def p_secao_declaracao_vars_uma_error(p):
-    "secao_declaracao_vars : error declaracao_vars ';'"
+def p_bloco_vars_error(p):
+    "bloco : error secao_declaracao_vars comando_composto"
     erro_sintatico(p, 1, "Necessário VAR para declarar váriaveis")
-    
-def p_secao_declaracao_vars_uma_pv_error(p):
-    "secao_declaracao_vars : VAR declaracao_vars error"
-    erro_sintatico(p, 3, "Esperado ';'")
+
+def p_secao_declaracao_vars_uma_error(p):
+    "secao_declaracao_vars : declaracao_vars error"
+    erro_sintatico(p, 2, "Esperado ';'")
 
 def p_secao_declaracao_vars_varias_error(p):
-    "secao_declaracao_vars : error declaracao_vars ';' secao_declaracao_vars"
-    erro_sintatico(p, 1, "Necessário VAR para declarar váriaveis")
-
-def p_secao_declaracao_vars_varias_pv_error(p):
-    "secao_declaracao_vars : VAR declaracao_vars error secao_declaracao_vars"
-    erro_sintatico(p, 3, "Esperado ';'")
-
+    "secao_declaracao_vars : declaracao_vars error secao_declaracao_vars"
+    erro_sintatico(p, 2, "Esperado ';'")
+    
 def p_declaracao_vars_tipo_error(p):
     "declaracao_vars : lista_ids ':' error"
     erro_sintatico(p, 3, "Erro no tipo da varíavel")
