@@ -170,7 +170,7 @@ def p_escrita(p):
         else:
             p[0] = p[1]
 
-# retorna um lista de expressões
+# Retorna um lista de expressões
 def p_lista_expr_uma(p):
     "lista_expr : expr %prec LOWEST"
     p[0] = [p[1]]
@@ -485,7 +485,6 @@ def p_error(p):
     if p is None:
         print("ERRO SINTÁTICO: fim de arquivo inesperado (EOF)")
         return
-    # print(f"ERRO SINTÁTICO na linha {p.lineno}: token inesperado {p.value!r}")
 
 def erro_sintatico(producao, posicao, mensagem):
     if producao:
