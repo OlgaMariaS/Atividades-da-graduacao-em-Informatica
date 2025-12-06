@@ -1,0 +1,17 @@
+iniciar calculadin :
+    real salariobase;
+    real bonus;
+    real salariofinal;
+    bool ehgerente;
+    salariobase = 1000.0;
+
+    input(ehgerente);
+    
+    if (ehgerente == true) {
+        bonus = 500;
+    } else {
+        bonus = 50;
+    }
+    salariofinal = salariobase + bonus;
+    output(salariofinal);
+finalizar calculadin .

@@ -1,0 +1,9 @@
+iniciar calculadin :
+    real a;
+    bool b;
+    a = 10.0;
+    b = true;
+    if (b == true)
+        a = a + 1.0; 
+    output(a);
+finalizar calculadin .

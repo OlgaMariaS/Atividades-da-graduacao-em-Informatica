@@ -1,0 +1,14 @@
+iniciar calculadin :
+    real numero;
+    bool positivomenorque10;
+
+    input(numero);
+    positivomenorque10 = false;
+
+    if ((numero > 0) and (numero < 10)) {
+        positivomenorque10 = true;
+    }
+    
+    output(positivomenorque10);
+    
+finalizar calculadin .

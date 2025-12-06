@@ -1,0 +1,5 @@
+iniciar calculadin :
+    real SalarioBase; 
+    salariobase = 2000.0;
+    output(salariobase);
+finalizar calculadin .

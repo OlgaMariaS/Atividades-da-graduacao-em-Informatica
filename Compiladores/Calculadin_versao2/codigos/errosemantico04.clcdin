@@ -1,0 +1,9 @@
+iniciar calculadin :
+    real bonus;
+    real salario;
+    salario = 1000.0;    
+    if (salario > 1000.0) {
+		bool bonus;
+        bonus = true; 
+    }
+finalizar calculadin .

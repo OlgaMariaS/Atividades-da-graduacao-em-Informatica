@@ -1,0 +1,4 @@
+iniciar calculadin :
+    salario = 1500.0;
+    output(salario);
+finalizar calculadin .

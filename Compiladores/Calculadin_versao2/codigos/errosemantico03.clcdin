@@ -1,0 +1,5 @@
+iniciar calculadin :
+    bool ehgerente;
+    ehgerente = 0;
+    output(ehgerente);
+finalizar calculadin .

@@ -2,9 +2,9 @@ import sys
 from pprint import pprint
 from lexer_cldin2 import make_lexer
 from parser_cldin2 import make_parser
-#from sem_cldin import VerificadorSemantico
+from sem_cldin2 import VerificadorSemantico
 from printer_cldin2 import ImpressoraAST
-#from codegen_cldin2 import GeradorCodigo
+from codegen_cldin2 import GeradorDeCodigo
 
 def imprimir_modo_uso():
     print("Modo de uso: python3 calculadin2.py <flag> < arquivo_entrada", file=sys.stderr)
@@ -41,10 +41,9 @@ def main():
                 break
         
         if lexer.tem_erro:
-            print("ERRO: Erros léxicos encontrados.", file=sys.stderr)
             sys.exit(0)
         else:
-            print("SUCESSO: Análise léxica concluída.")
+            print("SUCESSO: Análise léxica concluída.", file=sys.stderr)
         return 
 
     # Analisador sintático
@@ -52,52 +51,52 @@ def main():
     raiz_ast = parser.parse(data, lexer=lexer)
 
     if parser.tem_erro or lexer.tem_erro:
-        print("ERRO: Erros léxicos ou sintáticos encontrados.", file=sys.stderr)
         sys.exit(0)
     
     # Execução para -p
     if flag == '-p':
-        print("SUCESSO: Análises léxica e sintática concluídas.")
+        print("SUCESSO: Análises léxica e sintática concluídas.", file=sys.stderr)
         return 
     
     # Execução para -pp
     if flag == '-pp':
-       print("SUCESSO: Análises léxica e sintática concluídas.")
-       print("\n--- AST ---")
-       impressora = ImpressoraAST()
-       impressora.visita(raiz_ast)
-       return
+        print("SUCESSO: Análises léxica e sintática concluídas.", file=sys.stderr)
+        print("\n--- AST ---")
+        impressora = ImpressoraAST()
+        impressora.visita(raiz_ast)
+        return
 
     # Analisador semântico
-    #verificador = VerificadorSemantico()
-    #verificador.visita(raiz_ast) 
+    verificador = VerificadorSemantico()
+    verificador.visita(raiz_ast) 
     
-    #if verificador.tem_erro:
-    #    print("ERRO: Erros semânticos encontrados:", file=sys.stderr)
-    #    for erro in verificador.erros:
-    #        print(f"- {erro}", file=sys.stderr)
-    #    sys.exit(0)
+    if verificador.tem_erro:
+        print("Erros semânticos:", file=sys.stderr)
+        for erro in verificador.erros:
+            print(f"- {erro}", file=sys.stderr)
+        sys.exit(0)
     
     # Execução para -s
-    #if flag == '-s':
-    #    print("SUCESSO: Análises léxica, sintática e semântica concluídas.")
-    #    return 
+    if flag == '-s':
+        print("SUCESSO: Análises léxica, sintática e semântica concluídas.", file=sys.stderr)
+        return 
 
-    # Execução para -g (gera código) 
-    #if flag == '-g':
-    #    gerador = GeradorCodigo()
-    #    gerador.visita(raiz_ast)
+    # Execução para -g
+    if flag == '-g':
+        # Gerador de código
+        gerador = GeradorDeCodigo()
+        gerador.visita(raiz_ast)
 
-    #    if gerador.tem_erro:
-    #        print("ERRO: Erros de geração encontrados:", file=sys.stderr)
-    #        for erro in gerador.erros:
-    #            print(f"- {erro}", file=sys.stderr)
-    #        sys.exit(0)
-    
-    #    for instrucao in gerador.codigo:
-    #        print(instrucao)
-    #    print("SUCESSO: Geração de código concluída.", file=sys.stderr)
-    #    return 
+        if gerador.tem_erro:
+            print("ERRO DE GERAÇÃO:", file=sys.stderr)
+            for erro in gerador.erros:
+                print(f"- {erro}", file=sys.stderr)
+            sys.exit(0)
+        
+        for instrucao in gerador.codigo:
+            print(instrucao, file=sys.stdout)
+        print("SUCESSO: Geração de código concluída.", file=sys.stderr)
+        return 
 
     # Flag inválida
     print(f"ERRO: Flag '{flag}' desconhecida.", file=sys.stderr)

@@ -1,0 +1,5 @@
+iniciar calculadin :
+    real salario;
+    salario = 1500.0 @ 10.0; 
+    output(salario);
+finalizar calculadin .
