@@ -7,7 +7,7 @@ from printer_cldin2 import ImpressoraAST
 from codegen_cldin2 import GeradorDeCodigo
 
 def imprimir_modo_uso():
-    print("Modo de uso: python3 calculadin2.py <flag> < arquivo_entrada", file=sys.stderr)
+    print("Modo de uso: python calculadin2.py <flag> arquivo_entrada", file=sys.stderr)
     print("Flags:", file=sys.stderr)
     print("  -l : Executa apenas a análise léxica.", file=sys.stderr)
     print("  -p : Executa as análises léxica e sintática.", file=sys.stderr)
@@ -17,14 +17,15 @@ def imprimir_modo_uso():
 
 def main():
     
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         imprimir_modo_uso()
         sys.exit(0)
         
     flag = sys.argv[1]
     
     try:
-        data = sys.stdin.read()
+        with open(sys.argv[2], 'r') as input_file:
+            data = input_file.read()
     except Exception as e:
         print(f"Erro ao ler stdin: {e}", file=sys.stderr)
         sys.exit(0)
