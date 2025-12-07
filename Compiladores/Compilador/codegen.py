@@ -38,14 +38,15 @@ class GeradorDeCodigo(Visitador):
         self.tem_erro = True
 
     def _emite(self, instrucao: str):
-        self.codigo.append(f"     {instrucao}")
+        self.codigo.append(f"{instrucao}")
 
     def _emite_rotulo(self, rotulo: str):
         self.codigo.append(f"{rotulo}: NADA")
 
     def _novo_rotulo(self) -> str:
+        rotulo = f"R{self.contador_rotulos:02d}"
         self.contador_rotulos += 1
-        return f"R{self.contador_rotulos:02d}"
+        return rotulo
 
     def _normaliza_op(self, op: str) -> str:
         """
