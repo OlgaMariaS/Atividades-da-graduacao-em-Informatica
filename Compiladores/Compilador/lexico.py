@@ -1,4 +1,3 @@
-import sys
 import ply.lex as lex
 
 # Sinalizador de erros
@@ -64,7 +63,7 @@ def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
 
-# Ignora espaçõs e tabulações
+# Ignora espaços e tabulações
 t_ignore = ' \t'
 
 # Reporta erro e ignora o simbolo inválido
@@ -78,13 +77,5 @@ def make_lexer():
     lexer = lex.lex()
     lexer.tem_erro = False
     return lexer
-    
-# Testar somente léxico
-if __name__ == '__main__':
-    data = sys.stdin.read()
-    lexer = make_lexer()
-    lexer.input(data)
-    for tok in lexer:
-        print(f'<{tok.type}, {tok.value!r}> na linha: {tok.lineno}')
 
         
