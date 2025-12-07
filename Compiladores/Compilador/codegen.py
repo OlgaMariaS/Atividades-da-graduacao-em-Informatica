@@ -98,8 +98,8 @@ class GeradorDeCodigo(Visitador):
 
     def visita_Atribuicao(self, cmd: ast.Atribuicao):
         self.visita(cmd.calculo)
-        # armazena no endereço da variável
         simbolo = getattr(cmd.id, "simbolo", None)
+        
         if simbolo is None or simbolo.deslocamento is None:
             self._erro(f"Deslocamento não encontrado para '{cmd.id.nome}' na atribuição.")
             return

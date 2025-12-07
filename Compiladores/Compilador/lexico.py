@@ -61,6 +61,7 @@ def t_newline(t):
 # Ignora espaços e tabulações
 t_ignore = ' \t'
 
+# =========================================================== #
 # Reporta erro e ignora o simbolo inválido
 def t_error(t):
     print(f"Erro léxico: Símbolo ilegal {t.value[0]!r} na linha {t.lexer.lineno}")
