@@ -97,7 +97,6 @@ class GeradorDeCodigo(Visitador):
         pass
 
     def visita_Atribuicao(self, cmd: ast.Atribuicao):
-        # gera código RHS (expressão)
         self.visita(cmd.calculo)
         # armazena no endereço da variável
         simbolo = getattr(cmd.id, "simbolo", None)
@@ -108,41 +107,36 @@ class GeradorDeCodigo(Visitador):
 
     def visita_Condicional(self, cmd: ast.Condicional):
         rot_else = self._novo_rotulo()
-        rot_fim = self._novo_rotulo()
-        # gera condicional
+        rot_fim  = self._novo_rotulo()
+
         self.visita(cmd.condicao)
+        
         if cmd.bloco_else:
-            # se falso vai para else
             self._emite(f"DSVF {rot_else}")
-            # then
             self.visita(cmd.bloco_then)
-            # pula fim
             self._emite(f"DSVS {rot_fim}")
-            # label else
+
             self._emite_rotulo(rot_else)
             self.visita(cmd.bloco_else)
-            # label fim
-            self._emite_rotulo(rot_fim)
         else:
-            # se não há else, desvia para fim
+            # se não tem else, desvia para fim
             self._emite(f"DSVF {rot_fim}")
             self.visita(cmd.bloco_then)
-            self._emite_rotulo(rot_fim)
+
+        self._emite_rotulo(rot_fim)
 
     def visita_Repeticao(self, cmd: ast.Repeticao):
         rot_inicio = self._novo_rotulo()
         rot_fim = self._novo_rotulo()
-        # início do while
+
         self._emite_rotulo(rot_inicio)
-        # condição
         self.visita(cmd.condicao)
+
         # se falso -> fim
         self._emite(f"DSVF {rot_fim}")
-        # corpo
         self.visita(cmd.corpo)
         # volta para início
         self._emite(f"DSVS {rot_inicio}")
-        # fim
         self._emite_rotulo(rot_fim)
 
     def visita_Leitura(self, cmd: ast.Leitura):
@@ -162,7 +156,6 @@ class GeradorDeCodigo(Visitador):
 
     # EXPRESSÕES
     def visita_CalculoBinario(self, calc: ast.CalculoBinario):
-        # avalia esquerda e direita (pilha)
         self.visita(calc.esq)
         self.visita(calc.dir)
 
@@ -175,7 +168,6 @@ class GeradorDeCodigo(Visitador):
         self._emite(mepa)
 
     def visita_CalculoUnario(self, calc: ast.CalculoUnario):
-        # avalia subexpressão
         self.visita(calc.calculo)
         op = self._normaliza_op(calc.op)
         mepa = self.MEPA_OP_UNARIO.get(op, None)
