@@ -35,7 +35,6 @@ tokens = (
    'LESS',
    'GREATER',
    'ATRIB',
-   'NEG',
    'DOT',
 ) + tuple(reserved.values())
 
@@ -43,7 +42,6 @@ t_DIF     = r'<>'
 t_LESS    = r'<='
 t_GREATER = r'>='
 t_ATRIB   = r':='
-t_NEG     = r'-'
 t_DOT    = r'\.'
 
 # NUM: Sequencia de um ou mais digitos
@@ -68,7 +66,7 @@ t_ignore = ' \t'
 
 # Reporta erro e ignora o simbolo inválido
 def t_error(t):
-    print(f"Erro léxico: Símbolo ilegal '{t.value[0]!r}' na linha {t.lexer.lineno}")
+    print(f"Erro léxico: Símbolo ilegal {t.value[0]!r} na linha {t.lexer.lineno}")
     t.lexer.tem_erro = True
     t.lexer.skip(1)
 

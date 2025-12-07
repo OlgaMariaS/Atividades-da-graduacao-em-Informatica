@@ -2,21 +2,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 import AST as ast
 
-class Tipo:...
+class Tipo: ...
 
 @dataclass(frozen=True)
-class TipoReal(Tipo):
-    def __str__(self) -> str: return "real"
+class TipoInt(Tipo):
+    def __str__(self) -> str:
+        return "integer"
 
 @dataclass(frozen=True)
 class TipoBool(Tipo):
-    def __str__(self) -> str: return "booleano"
+    def __str__(self) -> str:
+        return "boolean"
 
-TIPO_REAL = TipoReal()
+TIPO_INT = TipoInt()
 TIPO_BOOL = TipoBool()
 
 class Categoria:
     VAR = 'var'
+    PROG = 'programa'
 
 @dataclass
 class Simbolo:

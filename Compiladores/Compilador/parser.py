@@ -189,7 +189,7 @@ def p_fator_not(p):
     p[0] = ast.CalculoUnario(op='not', calculo=p[2])
 
 def p_fator_neg(p):
-    "fator : NEG fator %prec UMINUS"
+    "fator : - fator %prec UMINUS"
     p[0] = ast.CalculoUnario(op='-', calculo=p[2])
 
 # =========================================================== #

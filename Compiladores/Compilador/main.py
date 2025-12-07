@@ -3,7 +3,7 @@ from pprint import pprint
 from lexico import make_lexer
 from parser import make_parser
 from printer import ImpressoraAST
-# from semantic import VerificadorSemantico
+from semantic import AnalisadorSemantico
 # from codegen import GeradorDeCodigo
 
 def imprimir_modo_uso():
@@ -67,20 +67,20 @@ def main():
         impressora.visita(raiz_ast)
         return
 
-    # # Analisador semântico
-    # verificador = VerificadorSemantico()
-    # verificador.visita(raiz_ast) 
+    # Analisador semântico
+    analisadorSem = AnalisadorSemantico()
+    analisadorSem.visita(raiz_ast) 
     
-    # if verificador.tem_erro:
-    #     print("Erros semânticos:", file=sys.stderr)
-    #     for erro in verificador.erros:
-    #         print(f"- {erro}", file=sys.stderr)
-    #     sys.exit(0)
+    if analisadorSem.tem_erro:
+        print("Erros semânticos:", file=sys.stderr)
+        for erro in analisadorSem.erros:
+            print(f"- {erro}", file=sys.stderr)
+        sys.exit(0)
     
-    # # Execução para -s
-    # if flag == '-s':
-    #     print("SUCESSO: Análises léxica, sintática e semântica concluídas.", file=sys.stderr)
-    #     return 
+    # Execução para -s
+    if flag == '-s':
+        print("SUCESSO: Análises léxica, sintática e semântica concluídas.", file=sys.stderr)
+        return 
 
     # # Execução para -g
     # if flag == '-g':
