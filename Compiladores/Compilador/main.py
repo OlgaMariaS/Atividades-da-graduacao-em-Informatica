@@ -1,10 +1,10 @@
-import sys
+import sys, os
 from pprint import pprint
 from lexico import make_lexer
 from parser import make_parser
 from printer import ImpressoraAST
 from semantic import AnalisadorSemantico
-# from codegen import GeradorDeCodigo
+from codegen import GeradorDeCodigo
 
 def imprimir_modo_uso():
     print("Modo de uso: python main.py <flag> arquivo_entrada", file=sys.stderr)
@@ -82,22 +82,30 @@ def main():
         print("SUCESSO: Análises léxica, sintática e semântica concluídas.", file=sys.stderr)
         return 
 
-    # # Execução para -g
-    # if flag == '-g':
-    #     # Gerador de código
-    #     gerador = GeradorDeCodigo()
-    #     gerador.visita(raiz_ast)
+    # Execução para -g
+    if flag == '-g':
+        gerador = GeradorDeCodigo()
+        gerador.visita(raiz_ast)
 
-    #     if gerador.tem_erro:
-    #         print("ERRO DE GERAÇÃO:", file=sys.stderr)
-    #         for erro in gerador.erros:
-    #             print(f"- {erro}", file=sys.stderr)
-    #         sys.exit(0)
-        
-    #     for instrucao in gerador.codigo:
-    #         print(instrucao, file=sys.stdout)
-    #     print("SUCESSO: Geração de código concluída.", file=sys.stderr)
-    #     return 
+        if gerador.tem_erro:
+            print("ERRO DE GERAÇÃO:", file=sys.stderr)
+            for erro in gerador.erros:
+                print(f"- {erro}", file=sys.stderr)
+            sys.exit(0)
+
+        # --- salvar arquivo .mep ---
+        entrada = os.path.basename(sys.argv[2])
+        nome_saida = os.path.splitext(entrada)[0] + ".mep"
+        caminho_saida = os.path.join("codigos_mepa", nome_saida)
+
+        try:
+            with open(caminho_saida, "w") as out:
+                for instrucao in gerador.codigo:
+                    out.write(instrucao + "\n")
+            print(f"SUCESSO: Geração de código  do '{nome_saida}' concluída.", file=sys.stderr)
+        except Exception as e:
+            print(f"ERRO ao salvar arquivo '{nome_saida}': {e}", file=sys.stderr)
+        return
 
     # Flag inválida
     print(f"ERRO: Flag '{flag}' desconhecida.", file=sys.stderr)

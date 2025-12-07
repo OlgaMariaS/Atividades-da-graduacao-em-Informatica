@@ -4,40 +4,29 @@ from typing import List
 from utils import Tipo, Simbolo
 
 class No: ...
-
 class Cmd(No): ...
-
 class Calculo(No):
     tipo: Tipo | None = None
 
-# ----------------------------------------------------------------------
 # PROGRAMA e BLOCO
-# ----------------------------------------------------------------------
-
 @dataclass
 class Programa(No):
     nome: str
     bloco: Bloco
-    total_vars: int = 0   # preenchido pelo analisador semântico
+    total_vars: int = 0
 
 @dataclass
 class Bloco(No):
     declaracoes: List[Declaracao]
-    comando: Cmd   # comando_composto
+    comando: Cmd
 
-# ----------------------------------------------------------------------
 # DECLARAÇÕES
-# ----------------------------------------------------------------------
-
 @dataclass
 class Declaracao(No):
-    nomes: List[str]      # lista_identificadores
-    tipo: str             # "integer" ou "boolean"
+    nomes: List[str]      
+    tipo: str
 
-# ----------------------------------------------------------------------
 # COMANDOS
-# ----------------------------------------------------------------------
-
 @dataclass
 class BlocoCmds(Cmd):
     lista_cmds: List[Cmd]
@@ -66,10 +55,7 @@ class Leitura(Cmd):
 class Escrita(Cmd):
     exprs: List[Calculo]
 
-# ----------------------------------------------------------------------
 # EXPRESSÕES
-# ----------------------------------------------------------------------
-
 @dataclass
 class CalculoBinario(Calculo):
     esq: Calculo

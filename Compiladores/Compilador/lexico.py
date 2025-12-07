@@ -1,8 +1,5 @@
 import ply.lex as lex
 
-# Sinalizador de erros
-existe_erro = False
-
 # Dicionário de palavras reservadas
 reserved = {
     'program':  'PROGRAM',

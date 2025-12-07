@@ -11,9 +11,13 @@ class TabelaSimbolos:
     def instala(self, s: Simbolo):
         if s.nome in self.tabela:
             return f"Identificador '{s.nome}' já declarado."
-        s.deslocamento = self.deslocamento_atual
-        self.tabela[s.nome] = s
-        self.deslocamento_atual += 1
+        if s.cat == Categoria.PROG:
+            s.deslocamento = self.deslocamento_atual
+            self.tabela[s.nome] = s
+        else:
+            s.deslocamento = self.deslocamento_atual
+            self.tabela[s.nome] = s
+            self.deslocamento_atual += 1
         return None
 
     def busca(self, nome) -> Simbolo|None:
