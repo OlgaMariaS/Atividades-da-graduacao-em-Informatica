@@ -1,0 +1,125 @@
+string alvo[];
+CONSTANTE TAMANHO = 7; # tamanho da palavra alvo
+
+numeros(tamaMax){
+    a partir do tamaMax define qual número vai iniciar exemplo:
+    tamaMax = 7, inicia a contagem com 00000001 até 9999999 (sete digitos no inicio e final)
+    retorna o array de numeros
+}
+
+dicionario(tamaMax){
+    string nomeDicionario = 'teste';
+    le o txt nomeDicionario da mesma pasta;
+    faz um filtro pegando somente palavras com tamaMax 
+    retorna o array de palavras;
+}
+
+mutacaoSufixo(palavra, qtde){
+    lista[qtde];
+
+    repete i = 0 ate qtde:
+        Para cada posicao da lista, adiciona no parametro palavra um sufixo resultando em uma string com um tamanho maximo de caracteres sendo a constante TAMANHO;
+        1° adiciona numeros, exemplo: teste123, teste111, teste999... 
+        2° repetir caracteres, exemplo testeeee, testtte; testeeee2
+
+    retorna lista[qtde]
+}
+mutacaoConcatenarTermos(palavra, listaPala, qtde){
+    lista[qtde];
+
+    repete i = 0 ate qtde:
+        Para cada posicao da lista, vai gerar uma string com um tamanho maximo de caracteres sendo a constante TAMANHO;
+        Concatenar a palavra com todas as string do array listaPala, exemplo: nome + teste = nometes e tesnome | nome + 2000 = nome200 e 200nome
+        
+    retorna lista[qtde]
+}
+mutacaoSubstituicao(palavra, qtde){
+    lista[qtde];
+
+    repete i = 0 ate qtde:
+        Para cada posicao da lista, adiciona no parametro palavra um sufixo resultando em uma string com um tamanho maximo de caracteres sendo a constante TAMANHO;
+        1° Substituir letras por números ou caracteres parecidos: a->4, a->@, e->3, o->0, i->1, s->5, t->7..., exemplo: nome = n0m3, n0me | gato = g@to
+
+    retorna lista[qtde]
+}
+
+mutacoes(array){
+    i = 0;
+    qtde = 3000000 # deixas variavel para depois podemos aumentar a quantidade gerada
+    qtdeTenta = qtde / 3; # pega a qtde total de tentativas e distribui entre as 3 mutações possiveis
+    qtdePalavraArray = tamanho(array) 
+    qtdeMutacoesPorPalavra = qtdeTenta / qtdePalavraArray;
+
+    arraySubs[qtdeTenta]
+    arrayConc[qtdeTenta]
+    arraySufi[qtdeTenta]
+
+    repete de i a qtdePalavraArray:
+        j = qtdeMutacoesPorPalavra * i;
+        limiteSuperior = qtdeMutacoesPorPalavra * (i+1);
+        repete j a limiteSuperior:
+            arraySubs = mutacaoSubstituicao(array[i])
+            arrayConc = mutacaoConcatenarTermos(array[i])
+            arraySufi = mutacaoSufixo(array[i])
+
+    arrayMutacoesGeradas[qtde] = arraySubs + arrayConca + arraySufixo;
+
+    retorna arrayMutacoesGeradas 
+}
+
+comparar(array){
+    int indiceEncontrado = -1;
+
+    percorre array ate acabar:
+        se (array[indice] = alvo)
+            indiceEncontrado = array[indice]
+    
+    retorna indiceEncontrado;
+}
+
+descobrePalavra(array){
+    tentativas = 0;
+
+    # só pode executar o proximo teste se não encontrou a palavra no teste anterior, para assim evitar processar grande volume sem necessidade
+    # ordem dos testes é do mais provável para o mais exaustivo 
+
+    lista1 = mutacoes(array);
+    teste1 = comparar(lista1)
+    tentativas = tamanho(lista1)
+    se (teste1 != -1){
+        retorna lista1[teste1], tentativas
+    }
+
+    libera a memoria de lista1
+    lista2 = dicionario(tamanhoMax);
+    teste2 = comparar(lista2)
+    tentativas = tentativas + tamanho(lista2)
+    se (teste2 != -1){
+        retorna lista2[teste2], tentativas
+    }
+
+    libera a memoria de lista2
+    lista3 = numeros(inicio, fim);
+    teste3 = comparar(lista3)
+    tentativas = tentativas + tamanho(lista3)
+    se (teste3 != -1){
+        retorna lista3[teste3], tentativas
+    }
+    se não{
+        retorna '', tentativas
+    }
+}
+
+main(){
+    input = le o arquivo.txt;
+
+    alvo = escreve("Qual a palavra alvo a ser encontrada?")
+
+    palavraEncontrada, qtdeTentativas = descobrePalavra(input);
+
+    se (palavraEncontrada = alvo){
+        escreve("Palavra encontrada %s com %d tentativas", palavraEncontrada, qtdeTentativas)
+    }se não{
+        escreve("Não encontrado com %d tentativas", qtdeTentativas)
+    }
+}
