@@ -6,12 +6,13 @@
 #include <locale.h>
 #include <pthread.h>
 
+#define TAMANHO 6 // Tamanho máximo da senha (utilizado para limitar a complexidade evitando longos períodos de processamento)
+#define NUMERO_DE_THREADS 2 // Números de threads é no minino duas se não o comportamente seria como o sequencial
 #define MAX_MUTACOES 1000
 #define MAX_LINHA 512
 #define NOME_DICIONARIO "rockyou.txt"
-#define TAMANHO 7 // Tamanho máximo da senha (utilizado para limitar a complexidade evitando longos períodos de processamento)
-#define NUMERO_DE_THREADS 2 // Números de threads é no minino duas se não o comportamente seria como o sequencial
 
+int tamanho;
 char alvo[TAMANHO + 1];
 
 /* ESTRUTURAS PARA PARALELIZAÇÃO */
@@ -581,13 +582,11 @@ int main() {
     long tentativas = 0;
 
     printf("\nEste e um programa paralelizado para simular um ataque de forca bruta na quebra de senhas.\n");
-    printf("O tempo de processamento depende da complexidade da senha.\n");
-    printf("Tamanho de senha suportado eh de %d caracteres.\n", TAMANHO);
+    printf("O tempo de processamento depende da complexidade e tamanho da senha.\n");
     
     printf("\n==== ENTRADA DE DADOS ====\n");
-    if (!ler_senha_alvo()) {
-        return 1;
-    }
+
+    if (!ler_senha_alvo()) return 1;
 
     printf("\nDigite o nome do arquivo com dados do alvo (extensao .txt): ");
     if (!fgets(nomeArquivoBase, sizeof(nomeArquivoBase), stdin)) {
@@ -599,6 +598,11 @@ int main() {
     if (dados_alvo == NULL) {
         return 1;
     }
+
+    printf("\nInforme o tamanho maximo de senha: ");
+    scanf(" %d", &tamanho);
+
+    if(tamanho <= 1) tamanho = TAMANHO;
 
     printf("\nDigite a quantidade de threads: ");
     scanf(" %d", &numero_threads);
