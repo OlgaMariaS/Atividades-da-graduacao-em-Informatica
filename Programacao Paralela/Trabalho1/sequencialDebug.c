@@ -21,7 +21,6 @@ void remover_quebra_linha(char *str) {
 
 /*
  * Duplica uma string em memória dinâmica.
- * Utilizada para apontar para a palavra encontrada
  */
 char *duplicar_string(const char *origem) {
     char *copia = (char *)malloc(strlen(origem) + 1);
@@ -65,13 +64,16 @@ int potencia10(int exp) {
 }
 
 /*
- * Compara um candidato com a senha alvo.
+ * Compara um candidato com a palavra alvo.
  */
 int comparar_candidato(const char *candidato) {
+    printf("[DEBUG] Comparando candidato '%s' com alvo '%s'\n", candidato, alvo);
+
     if (strcmp(candidato, alvo) == 0) {
-        printf(">>> ENCONTRADO! '%s' e igual ao alvo.\n", candidato);
+        printf("[DEBUG] >>> ENCONTRADO! '%s' e igual ao alvo.\n", candidato);
         return 1;
     }
+
     return 0;
 }
 /*
@@ -88,12 +90,14 @@ void liberar_array_strings(char **array, int qtd) {
 /*
  * Lê o arquivo base e guarda em array dinâmico.
  */
-char **ler_arquivo_para_array(const char *nomeArquivo, int *quantidade, int tamanho_exato) {
+char **ler_arquivo_para_array(const char *nomeArquivo, int *quantidade) {
     FILE *fp = fopen(nomeArquivo, "r");
     if (fp == NULL) {
-        printf("[ERRO] Nao foi possível abrir o arquivo: %s\n", nomeArquivo);
+        printf("[ERRO] Nao foi possível abrir o arquivo base: %s\n", nomeArquivo);
         return NULL;
     }
+
+    printf("[DEBUG] Arquivo base '%s' aberto com sucesso.\n", nomeArquivo);
 
     char linha[MAX_LINHA];
     char **array = NULL;
@@ -102,49 +106,64 @@ char **ler_arquivo_para_array(const char *nomeArquivo, int *quantidade, int tama
     while (fgets(linha, sizeof(linha), fp)) {
         remover_quebra_linha(linha);
 
-        if (strlen(linha) == 0) continue;
-
-        if (tamanho_exato > 0) {
-            if ((int)strlen(linha) != tamanho_exato) continue;
+        if (strlen(linha) == 0) {
+            printf("[DEBUG] Linha vazia ignorada.\n");
+            continue;
         }
 
-        char **novo = realloc(array, (count + 1) * sizeof(char *));
+        if ((int)strlen(linha) > TAMANHO) {
+            printf("[DEBUG] Palavra '%s' ignorada por ultrapassar TAMANHO=%d.\n", linha, TAMANHO);
+            continue;
+        }
+
+        char **novo = (char **)realloc(array, (count + 1) * sizeof(char *));
         if (novo == NULL) {
+            printf("[ERRO] Falha no realloc do array de strings.\n");
             fclose(fp);
-            liberar_array_strings(array, count);
-            return NULL;
+            free(array);
+            exit(1);
         }
-
         array = novo;
+
         array[count] = duplicar_string(linha);
+        printf("[DEBUG] Palavra lida[%d] = '%s'\n", count, array[count]);
         count++;
+    }
+
+    if (ferror(fp)) {
+        printf("[ERRO] Erro durante leitura do arquivo base.\n");
+        fclose(fp);
+        liberar_array_strings(array, count);
+        return NULL;
     }
 
     fclose(fp);
     *quantidade = count;
+    printf("[DEBUG] Total de palavras base lidas: %d\n", count);
+
     return array;
 }
 
 /*
  * Gera mutações por substituiçao.
- * a->4 ou @, e->3, o->0, i->1, s->5, t->7
  */
 int mutacao_substituicao(const char *palavra, char resultados[][TAMANHO + 1], int maxResultados) {
     int total = 0;
     int len = (int)strlen(palavra);
 
+    printf("[DEBUG] mutacao_substituicao() para '%s'\n", palavra);
+
     for (int i = 0; i < len && total < maxResultados; i++) {
-        // copia da palavra original
         char nova[TAMANHO + 1];
         strncpy(nova, palavra, TAMANHO);
         nova[TAMANHO] = '\0';
 
-        // pega somente um caracter minusculo da palavra
         char c = (char)tolower((unsigned char)nova[i]);
 
         if (c == 'a') {
             nova[i] = '4';
             strcpy(resultados[total], nova);
+            printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
 
             if (total < maxResultados) {
@@ -152,27 +171,33 @@ int mutacao_substituicao(const char *palavra, char resultados[][TAMANHO + 1], in
                 nova[TAMANHO] = '\0';
                 nova[i] = '@';
                 strcpy(resultados[total], nova);
+                printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
                 total++;
             }
         } else if (c == 'e') {
             nova[i] = '3';
             strcpy(resultados[total], nova);
+            printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
         } else if (c == 'i') {
             nova[i] = '1';
             strcpy(resultados[total], nova);
+            printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
         } else if (c == 'o') {
             nova[i] = '0';
             strcpy(resultados[total], nova);
+            printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
         } else if (c == 's') {
             nova[i] = '5';
             strcpy(resultados[total], nova);
+            printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
         } else if (c == 't') {
             nova[i] = '7';
             strcpy(resultados[total], nova);
+            printf("[DEBUG] Substituiçao gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
         }
     }
@@ -181,40 +206,41 @@ int mutacao_substituicao(const char *palavra, char resultados[][TAMANHO + 1], in
 }
 
 /*
- * Gera mutações por sufixo respeitando o tamanho máximo da senha.
- * nome -> nome123, nomenom, nomeeee, nomeee1
+ * Gera mutações por sufixo.
  */
 int mutacao_sufixo(const char *palavra, char resultados[][TAMANHO + 1], int maxResultados) {
     int total = 0;
     int tamanhoBase = (int)strlen(palavra);
-    int max_repeti_ult_letra = 3;
 
-    // se o tamanho da palavra ja é o máximo, não é possível adicionar sufixo
-    if (tamanhoBase >= TAMANHO) return 0;
-    // palavra vazia
+    printf("[DEBUG] mutacao_sufixo() para '%s'\n", palavra);
+
+    if (tamanhoBase >= TAMANHO) {
+        printf("[DEBUG] Palavra já está no tamanho máximo. Nenhum sufixo gerado.\n");
+        return 0;
+    }
+
     if (tamanhoBase == 0) return 0;
 
     char ultimo = palavra[tamanhoBase - 1];
     int espacoLivre = TAMANHO - tamanhoBase;
 
-    for (int i = 0; i <= max_repeti_ult_letra && i <= espacoLivre && total < maxResultados; i++) {
+    for (int repeticoes = 0; repeticoes <= 3 && repeticoes <= espacoLivre && total < maxResultados; repeticoes++) {
         char prefixo[TAMANHO + 1];
         strcpy(prefixo, palavra);
 
-        for (int r = 0; r < i; r++) {
+        for (int r = 0; r < repeticoes; r++) {
             int len = (int)strlen(prefixo);
             prefixo[len] = ultimo;
             prefixo[len + 1] = '\0';
         }
 
-        if (i > 0) {
+        if (repeticoes > 0) {
             strcpy(resultados[total], prefixo);
+            printf("[DEBUG] Sufixo repetiçao gerado[%d] = '%s'\n", total, resultados[total]);
             total++;
             if (total >= maxResultados) break;
         }
-        
-        // Criar sufixos com números sendo o máximo a quantidade de espaço livre
-        // ex: nome até TAMANHO(7) sobra 3 resulta em: nome100, nome101, ..., nome999
+
         int espacoNumeros = TAMANHO - (int)strlen(prefixo);
         if (espacoNumeros <= 0) continue;
 
@@ -227,6 +253,7 @@ int mutacao_sufixo(const char *palavra, char resultados[][TAMANHO + 1], int maxR
 
             if ((int)strlen(candidato) <= TAMANHO) {
                 strcpy(resultados[total], candidato);
+                printf("[DEBUG] Sufixo número gerado[%d] = '%s'\n", total, resultados[total]);
                 total++;
             }
         }
@@ -236,32 +263,39 @@ int mutacao_sufixo(const char *palavra, char resultados[][TAMANHO + 1], int maxR
 }
 
 /*
- * Gera mutações com datas
- * Se a palavra for um ano, gera mutações de data compatíveis com TAMANHO.
- * YYYY -> YYYYMMD, DDMYYYY, YYYYMDD
+ * Se a palavra for um ano, gera mutações de data compatíveis com TAMANHO=7.
  */
 int mutacao_data(const char *palavra, char resultados[][TAMANHO + 1], int maxResultados) {
     int total = 0;
 
-    if (!eh_ano(palavra)) return 0;
-    
+    printf("[DEBUG] mutacao_data() para '%s'\n", palavra);
+
+    if (!eh_ano(palavra)) {
+        printf("[DEBUG] Palavra '%s' nao parece um ano. Nenhuma mutaçao de data gerada.\n", palavra);
+        return 0;
+    }
+
     for (int mes = 1; mes <= 12 && total < maxResultados; mes++) {
         snprintf(resultados[total], TAMANHO + 1, "%s%02d", palavra, mes);
+        printf("[DEBUG] Data ano+mês gerada[%d] = '%s'\n", total, resultados[total]);
         total++;
     }
 
     for (int dia = 1; dia <= 31 && total < maxResultados; dia++) {
         snprintf(resultados[total], TAMANHO + 1, "%s%02d", palavra, dia);
+        printf("[DEBUG] Data ano+dia gerada[%d] = '%s'\n", total, resultados[total]);
         total++;
     }
 
     for (int mes = 1; mes <= 12 && total < maxResultados; mes++) {
         snprintf(resultados[total], TAMANHO + 1, "%02d%s", mes, palavra);
+        printf("[DEBUG] Data mês+ano gerada[%d] = '%s'\n", total, resultados[total]);
         total++;
     }
 
     for (int dia = 1; dia <= 31 && total < maxResultados; dia++) {
         snprintf(resultados[total], TAMANHO + 1, "%02d%s", dia, palavra);
+        printf("[DEBUG] Data dia+ano gerada[%d] = '%s'\n", total, resultados[total]);
         total++;
     }
 
@@ -269,11 +303,18 @@ int mutacao_data(const char *palavra, char resultados[][TAMANHO + 1], int maxRes
 }
 
 /*
- * Gera mutações concatendo de duas formas as palavras do input.
- * nome + teste = nometes, tesnome
+ * Concatenaçao.
  */
-int mutacao_concatenar_termos(const char *palavra, char **listaPalavras, int qtdPalavras, char resultados[][TAMANHO + 1], int maxResultados) {
+int mutacao_concatenar_termos(
+    const char *palavra,
+    char **listaPalavras,
+    int qtdPalavras,
+    char resultados[][TAMANHO + 1],
+    int maxResultados
+) {
     int total = 0;
+
+    printf("[DEBUG] mutacao_concatenar_termos() para '%s'\n", palavra);
 
     for (int i = 0; i < qtdPalavras && total < maxResultados; i++) {
         char temp1[2 * TAMANHO + 10];
@@ -284,11 +325,13 @@ int mutacao_concatenar_termos(const char *palavra, char **listaPalavras, int qtd
 
         strncpy(resultados[total], temp1, TAMANHO);
         resultados[total][TAMANHO] = '\0';
+        printf("[DEBUG] Concat gerada[%d] = '%s'\n", total, resultados[total]);
         total++;
 
         if (total < maxResultados) {
             strncpy(resultados[total], temp2, TAMANHO);
             resultados[total][TAMANHO] = '\0';
+            printf("[DEBUG] Concat gerada[%d] = '%s'\n", total, resultados[total]);
             total++;
         }
     }
@@ -297,13 +340,11 @@ int mutacao_concatenar_termos(const char *palavra, char **listaPalavras, int qtd
 }
 
 /*
- * Aplica 3 métodos de mutações em todas as palavras do array de input.
- * Compara se as mutações geradas são iguais a senha alvo. 
+ * Gera mutações em todas as palavras do array de input.
  */
 char *ataque_por_mutacoes(char **array, int qtdPalavras, long *tentativas) {
-    printf("[ETAPA 1] Iniciando ataque por mutacoes\n\n");
-
     for (int i = 0; i < qtdPalavras; i++) {
+        printf("\n[DEBUG] ===== Testando palavra base '%s' =====\n", array[i]);
 
         char resultados[MAX_MUTACOES][TAMANHO + 1];
         int qtd = 0;
@@ -340,45 +381,109 @@ char *ataque_por_mutacoes(char **array, int qtdPalavras, long *tentativas) {
             }
         }
     }
-    printf("==============================\n");
+
     return NULL;
 }
 
 /*
- * Ataque de força bruta usando o dicionário rockyou.
- * Aplica um filtro e testa somente as palavras com tamanho igual a TAMANHO.
+ * Dicionário em streaming usando nome fixo.
  */
 char *ataque_por_dicionario(long *tentativas) {
-    printf("[ETAPA 2] Iniciando o ataque por dicionario\n\n");
-
-    int qtd = 0;
-    char **palavras = ler_arquivo_para_array(NOME_DICIONARIO, &qtd, TAMANHO);
-    if (palavras == NULL) {
+    FILE *fp = fopen(NOME_DICIONARIO, "rb");
+    if (fp == NULL) {
+        printf("[ERRO] Nao foi possível abrir o dicionário: %s\n", NOME_DICIONARIO);
         return NULL;
     }
 
-    printf("Total de palavras filtradas com tamanho %d: %d\n", TAMANHO, qtd);
+    printf("\n[DEBUG] ===== Carregando dicionário inteiro em memória: '%s' =====\n", NOME_DICIONARIO);
 
-    for (int i = 0; i < qtd; i++) {
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        printf("[ERRO] Falha no fseek do dicionário.\n");
+        fclose(fp);
+        return NULL;
+    }
+
+    long tamanhoArquivo = ftell(fp);
+    if (tamanhoArquivo < 0) {
+        printf("[ERRO] Falha no ftell do dicionário.\n");
+        fclose(fp);
+        return NULL;
+    }
+
+    rewind(fp);
+
+    char *buffer = (char *)malloc((size_t)tamanhoArquivo + 1);
+    if (buffer == NULL) {
+        printf("[ERRO] Memória insuficiente para carregar o dicionário.\n");
+        fclose(fp);
+        return NULL;
+    }
+
+    size_t bytesLidos = fread(buffer, 1, (size_t)tamanhoArquivo, fp);
+    fclose(fp);
+
+    buffer[bytesLidos] = '\0';
+
+    printf("[DEBUG] Dicionário carregado em memória: %zu bytes.\n", bytesLidos);
+    printf("[DEBUG] Iniciando parsing e filtro por tamanho %d...\n", TAMANHO);
+
+    char **linhasFiltradas = NULL;
+    long qtdFiltradas = 0;
+
+    char *inicio = buffer;
+    for (size_t i = 0; i <= bytesLidos; i++) {
+        if (buffer[i] == '\n' || buffer[i] == '\0') {
+            buffer[i] = '\0';
+
+            size_t len = strlen(inicio);
+            if (len > 0 && inicio[len - 1] == '\r') {
+                inicio[len - 1] = '\0';
+                len--;
+            }
+
+            if ((int)len == TAMANHO) {
+                char **novo = (char **)realloc(linhasFiltradas, (qtdFiltradas + 1) * sizeof(char *));
+                if (novo == NULL) {
+                    printf("[ERRO] Falha ao expandir lista filtrada do dicionário.\n");
+                    free(linhasFiltradas);
+                    free(buffer);
+                    return NULL;
+                }
+
+                linhasFiltradas = novo;
+                linhasFiltradas[qtdFiltradas] = inicio;
+                qtdFiltradas++;
+            }
+
+            inicio = &buffer[i + 1];
+        }
+    }
+
+    printf("[DEBUG] Total de palavras filtradas com tamanho %d: %ld\n", TAMANHO, qtdFiltradas);
+    printf("[DEBUG] Iniciando comparaçao do dicionário filtrado...\n");
+
+    for (long i = 0; i < qtdFiltradas; i++) {
         (*tentativas)++;
 
         if (i > 0 && i % 1000000 == 0) {
-            printf("[PROGRESSO] Dicionario: %d milhoes de palavras testadas.\n", i / 1000000);
+            printf("[PROGRESSO] Dicionário: %ld milhao(ões) de palavras testadas.\n", i / 1000000);
         }
 
-        if (strcmp(palavras[i], alvo) == 0) {
-            char *resultado = duplicar_string(palavras[i]);
-            liberar_array_strings(palavras, qtd);
+        if (strcmp(linhasFiltradas[i], alvo) == 0) {
+            char *resultado = duplicar_string(linhasFiltradas[i]);
+            free(linhasFiltradas);
+            free(buffer);
             return resultado;
         }
     }
-    printf("==============================\n");
-    liberar_array_strings(palavras, qtd);
+
+    free(linhasFiltradas);
+    free(buffer);
     return NULL;
 }
 
 /*
- * Ataque usando apenas números com exatamente TAMANHO dígitos.
+ * Testa apenas números com exatamente TAMANHO dígitos.
  * Para TAMANHO=7, vai de 1000000 ate 9999999.
  */
 char *ataque_numerico(long *tentativas) {
@@ -386,22 +491,27 @@ char *ataque_numerico(long *tentativas) {
     long long inicio = potencia10(TAMANHO - 1);
     long long fim = potencia10(TAMANHO);
 
-    printf("\n [ETAPA 3] Iniciando ataque numerico\n");
-    printf("O progresso sera atualizado a cada 1 milhao de testes...\n\n");
+    printf("\n[SISTEMA] Iniciando busca numerica sequencial de %lld possibilidades...\n", fim - inicio);
+    printf("[SISTEMA] Aguarde... O progresso será atualizado a cada 1 milhao de testes.\n\n");
 
     for (long long i = inicio; i < fim; i++) {
-        // Formata com zeros à esquerda caso necessário.
+        /*
+         * Formata com zeros à esquerda caso necessário.
+         * Para TAMANHO=7, vai de 1000000 ate 9999999.
+         */
         sprintf(tentativa, "%0*lld", TAMANHO, i);
 
-        if (i % 1000000 == 0)
-            printf("[PROGRESSO] %lld milhoes de numeros testados...\n", i / 1000000);
+        if (i > inicio && i % 1000000 == 0) {
+            printf("[PROGRESSO] %lld milhao(ões) de números testados...\n", i / 1000000);
+        }
 
         (*tentativas)++;
 
-        if (strcmp(tentativa, alvo) == 0)
+        if (strcmp(tentativa, alvo) == 0) {
             return duplicar_string(tentativa);
+        }
     }
-    printf("==============================\n");
+
     return NULL;
 }
 
@@ -438,6 +548,11 @@ int ler_senha_alvo(void) {
 
     remover_quebra_linha(buffer);
 
+    if ((int)strlen(buffer) < TAMANHO) {
+        printf("[ERRO] A senha alvo nao pode ter menos de %d caracteres.\n", TAMANHO);
+        return 0;
+    }
+
     if ((int)strlen(buffer) > TAMANHO) {
         printf("[ERRO] A senha alvo nao pode ter mais de %d caracteres.\n", TAMANHO);
         return 0;
@@ -448,16 +563,16 @@ int ler_senha_alvo(void) {
 }
 
 int main() {
-    // Configuraçao para 
+    // Configuraçao 
     setlocale(LC_ALL, "");
 
     char nomeArquivoBase[256];
     int qtdPalavrasBase = 0;
     long tentativas = 0;
 
-    printf("\nEste e um programa SEQUENCIAL para simular um ataque de forca bruta na quebra de senhas.\n");
+    printf("Este e um programa SEQUENCIAL para simular um ataque de força bruta na quebra de senhas.\n");
     printf("O tempo de processamento depende da complexidade da senha.\n");
-    printf("Tamanho de senha suportado eh de %d caracteres.\n", TAMANHO);
+    printf("Tamanho de senha suportado eh %d caracteres.\n", TAMANHO);
     
     printf("\n=== ENTRADA DE DADOS ===\n");
     if (!ler_senha_alvo()) {
@@ -469,7 +584,7 @@ int main() {
         return 1;
     }
     remover_quebra_linha(nomeArquivoBase);
-    char **dados_alvo = ler_arquivo_para_array(nomeArquivoBase, &qtdPalavrasBase, 0);
+    char **dados_alvo = ler_arquivo_para_array(nomeArquivoBase, &qtdPalavrasBase);
     if (dados_alvo == NULL) {
         return 1;
     }
@@ -484,10 +599,10 @@ int main() {
     double tempo_gasto = (double)(tempo_fim - tempo_inicio) / CLOCKS_PER_SEC;
     
     if (senhaEncontrada != NULL) {
-        printf("\n[RESULTADO] Senha quebrada: '%s' com %ld tentativas.\nMais sorte na proxima vez.\n\n", senhaEncontrada, tentativas);
+        printf("\n[RESULTADO] Palavra encontrada: '%s' com %ld tentativas.\n", senhaEncontrada, tentativas);
         free(senhaEncontrada);
     } else {
-        printf("\n[RESULTADO] Nao foi possivel quebrar a senha com %ld tentativas.\nVoce eh uma pessoa de sorte.\n\n", tentativas);
+        printf("\n[RESULTADO] Nao encontrado com %ld tentativas.\n", tentativas);
     }
 
     printf("Tempo total de execucao: %.3f segundos\n", tempo_gasto);
