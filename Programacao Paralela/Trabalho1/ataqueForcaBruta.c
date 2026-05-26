@@ -5,14 +5,16 @@
 #include <time.h>
 #include <locale.h>
 #include <pthread.h>
+#include <semaphore.h>
 
-#define TAMANHO 6 // Tamanho máximo da senha (utilizado para limitar a complexidade evitando longos períodos de processamento)
+#define TAMANHO 12 // Tamanho máximo da senha (utilizado para limitar a complexidade evitando longos períodos de processamento)
 #define NUMERO_DE_THREADS 2 // Números de threads é no minino duas se não o comportamente seria como o sequencial
+#define TOTAL_SUBSTITUICOES 6 // Total de tipos de substituição leet speak suportados
 #define MAX_MUTACOES 1000
 #define MAX_LINHA 512
 #define NOME_DICIONARIO "rockyou.txt"
 
-int tamanho;
+int tamMaxSenha;
 char alvo[TAMANHO + 1];
 
 /* ESTRUTURAS PARA PARALELIZAÇÃO */
@@ -20,16 +22,16 @@ typedef struct {
     int inicio;
     int fim;
     const char *palavra;
-    char (*resultados)[TAMANHO + 1];
+    char (*resultados)[8];
 } DadosMutacaoData;
 
 typedef struct {
-    int inicio;
-    int fim;
     long thread_id;
     long tentativas_locais;
-    char **palavras;       // Ponteiro para o dicionário na memória
-    char **senha_achada;   // Ponteiro para a variável local da função de controle
+    char **palavras;
+    char **senha_achada;
+    int inicio;
+    int fim;
 } DadosThreadDicionario;
 
 typedef struct {
@@ -37,8 +39,46 @@ typedef struct {
     long long fim;
     long thread_id;
     long tentativas_locais;
-    char **senha_achada; // Ponteiro para a variável local da função de controle
+    char **senha_achada;
 } DadosThread;
+
+typedef struct {
+    long thread_id;
+    int inicio_subst;        
+    int fim_subst;
+    const char *palavra;
+    int len_palavra;
+    char **resultados_globais; 
+    int *total_global;
+    pthread_mutex_t *mutex;
+    int maxResultados;
+} DadosSubstituicao;
+
+typedef struct {
+    long thread_id;
+    int inicio_iter;         
+    int fim_iter;           
+    const char *palavra;
+    int tamanhoBase;
+    char ultimo;
+    int espacoLivre;
+    char **resultados_globais;
+    int *total_global;         
+    pthread_mutex_t *mutex;
+    int maxResultados;
+} DadosSufixo;
+
+typedef struct {
+    long thread_id;
+    int inicio_lista;        
+    int fim_lista;           
+    const char *palavra;
+    char **listaPalavras;
+    char **resultados_globais; 
+    int *total_global;      
+    pthread_mutex_t *mutex;
+    int maxResultados;
+} DadosConcatenar;
 /* ============================================================================ */
 /* FUNÇÕES AUXILIARES */
 
@@ -179,113 +219,247 @@ char **ler_arquivo_para_array(const char *nomeArquivo, int *quantidade, int tama
 }
 
 /* ============================================================================ */
-/* FUNÇÕES DO ATAQUE POR MUTAÇÕES */
+/* FUNÇÕES DE ATAQUE POR MUTAÇÕES */
+
+/* 
+ * Tabela de substituições:
+ * Cada entrada define: o caractere original, o substituto
+ */
+static const struct { char orig; char subst1; char subst2; } TABELA_SUBST[TOTAL_SUBSTITUICOES] = {
+    {'a', '4', '@'},
+    {'e', '3', '\0'},
+    {'i', '1', '\0'},
+    {'o', '0', '\0'},
+    {'s', '5', '\0'},
+    {'t', '7', '\0'},
+};
+
+/* 
+ * Cada thread recebe um subconjunto de índices da TABELA_SUBST (inicio_subst..fim_subst).
+ * Para cada tipo de substituição no seu intervalo, a thread percorre toda a palavra
+ * buscando ocorrências do caractere original e gera a(s) string(s) substituída(s).
+ * O acesso ao array compartilhado e ao contador global é protegido por mutex. */
+void *rotina_mutacao_substituicao(void *arg) {
+    DadosSubstituicao *dados = (DadosSubstituicao *)arg;
+    const char *palavra = dados->palavra;
+    int len = dados->len_palavra;
+
+    for (int s = dados->inicio_subst; s < dados->fim_subst; s++) {
+        char orig   = TABELA_SUBST[s].orig;
+        char subst1 = TABELA_SUBST[s].subst1;
+        char subst2 = TABELA_SUBST[s].subst2;
+
+        for (int i = 0; i < len; i++) {
+            char c = (char)tolower((unsigned char)palavra[i]);
+            if (c != orig) continue;
+
+            // Primeira substituição
+            char nova[TAMANHO + 1];
+            strncpy(nova, palavra, tamMaxSenha);
+            nova[tamMaxSenha] = '\0';
+            nova[i] = subst1;
+
+            pthread_mutex_lock(dados->mutex);
+            if (dados->total_global[0] < dados->maxResultados) {
+                dados->resultados_globais[dados->total_global[0]] = duplicar_string(nova);
+                dados->total_global[0]++;
+            }
+            pthread_mutex_unlock(dados->mutex);
+
+            // Segunda substituição (apenas 'a' -> '@')
+            if (subst2 != '\0') {
+                strncpy(nova, palavra, tamMaxSenha);
+                nova[tamMaxSenha] = '\0';
+                nova[i] = subst2;
+
+                pthread_mutex_lock(dados->mutex);
+                if (dados->total_global[0] < dados->maxResultados) {
+                    dados->resultados_globais[dados->total_global[0]] = duplicar_string(nova);
+                    dados->total_global[0]++;
+                }
+                pthread_mutex_unlock(dados->mutex);
+            }
+        }
+    }
+    pthread_exit(NULL);
+}
+
 /*
  * Gera mutações por substituiçao.
  * a->4 ou @, e->3, o->0, i->1, s->5, t->7
+ *
+ * Distribui tipos de substituição entre as threads disponíveis:
+ *   - Se num_threads >= TOTAL_SUBSTITUICOES: cada thread recebe exatamente 1 tipo.
+ *   - Caso contrário: os tipos são divididos igualmente entre as threads, ex: 2 threads para 6 tipos => cada thread processa 3 tipos distintos.
  */
-int mutacao_substituicao(const char *palavra, char resultados[][TAMANHO + 1], int maxResultados) {
-    int total = 0;
+int mutacao_substituicao(const char *palavra, char resultados[][tamMaxSenha + 1], int maxResultados, int num_threads) {
     int len = (int)strlen(palavra);
+    if (len == 0) return 0;
 
-    for (int i = 0; i < len && total < maxResultados; i++) {
-        // copia da palavra original
-        char nova[TAMANHO + 1];
-        strncpy(nova, palavra, TAMANHO);
-        nova[TAMANHO] = '\0';
+    // Array para receber as substituições das threads
+    char **res_temp = (char **)calloc(maxResultados, sizeof(char *));
+    if (!res_temp) return 0;
 
-        // pega somente um caracter minusculo da palavra
-        char c = (char)tolower((unsigned char)nova[i]);
+    int total_global = 0;
+    pthread_mutex_t mutex;
+    pthread_mutex_init(&mutex, NULL);
 
-        if (c == 'a') {
-            nova[i] = '4';
-            strcpy(resultados[total], nova);
-            total++;
+    // Determina quantas threads realmente serão criadas (não mais do que TOTAL_SUBSTITUICOES)
+    if (num_threads > TOTAL_SUBSTITUICOES) num_threads = TOTAL_SUBSTITUICOES;
 
-            if (total < maxResultados) {
-                strncpy(nova, palavra, TAMANHO);
-                nova[TAMANHO] = '\0';
-                nova[i] = '@';
-                strcpy(resultados[total], nova);
-                total++;
-            }
-        } else if (c == 'e') {
-            nova[i] = '3';
-            strcpy(resultados[total], nova);
-            total++;
-        } else if (c == 'i') {
-            nova[i] = '1';
-            strcpy(resultados[total], nova);
-            total++;
-        } else if (c == 'o') {
-            nova[i] = '0';
-            strcpy(resultados[total], nova);
-            total++;
-        } else if (c == 's') {
-            nova[i] = '5';
-            strcpy(resultados[total], nova);
-            total++;
-        } else if (c == 't') {
-            nova[i] = '7';
-            strcpy(resultados[total], nova);
-            total++;
-        }
+    pthread_t threads[TOTAL_SUBSTITUICOES];
+    DadosSubstituicao dados_threads[TOTAL_SUBSTITUICOES];
+    int carga = TOTAL_SUBSTITUICOES / num_threads;
+
+    for (int i = 0; i < num_threads; i++) {
+        dados_threads[i].thread_id         = i;
+        dados_threads[i].inicio_subst      = i * carga;
+        dados_threads[i].fim_subst         = (i == num_threads - 1) ? TOTAL_SUBSTITUICOES : (i + 1) * carga;
+        dados_threads[i].palavra           = palavra;
+        dados_threads[i].len_palavra       = len;
+        dados_threads[i].resultados_globais = res_temp;
+        dados_threads[i].total_global      = &total_global;
+        dados_threads[i].mutex             = &mutex;
+        dados_threads[i].maxResultados     = maxResultados;
+
+        pthread_create(&threads[i], NULL, rotina_mutacao_substituicao, (void *)&dados_threads[i]);
     }
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    pthread_mutex_destroy(&mutex);
+
+    // Copia para o array estático esperado pelo chamador
+    int total = total_global;
+    for (int i = 0; i < total; i++) {
+        strncpy(resultados[i], res_temp[i], tamMaxSenha);
+        resultados[i][tamMaxSenha] = '\0';
+        free(res_temp[i]);
+    }
+    free(res_temp);
 
     return total;
 }
 
-/*
- * Gera mutações por sufixo respeitando o tamanho máximo da senha.
- * nome -> nome123, nomenom, nomeeee, nomeee1
+/* 
+ * Cada thread recebe um subintervalo do loop externo (i = número de repetições
+ * da última letra). Para cada valor de i no seu intervalo, a thread gera as
+ * variações de sufixo.
  */
-int mutacao_sufixo(const char *palavra, char resultados[][TAMANHO + 1], int maxResultados) {
-    int total = 0;
-    int tamanhoBase = (int)strlen(palavra);
-    int max_repeti_ult_letra = 3;
+void *rotina_mutacao_sufixo(void *arg) {
+    DadosSufixo *dados = (DadosSufixo *)arg;
+    const char *palavra = dados->palavra;
 
-    // se o tamanho da palavra ja é o máximo, não é possível adicionar sufixo
-    if (tamanhoBase >= TAMANHO) return 0;
-    // palavra vazia
-    if (tamanhoBase == 0) return 0;
+    for (int i = dados->inicio_iter; i <= dados->fim_iter; i++) {
+        if (i == 0) continue; // i=0 não gera sufixo de letras
 
-    char ultimo = palavra[tamanhoBase - 1];
-    int espacoLivre = TAMANHO - tamanhoBase;
-
-    for (int i = 0; i <= max_repeti_ult_letra && i <= espacoLivre && total < maxResultados; i++) {
+        // Monta prefixo com 'i' repetições da última letra
         char prefixo[TAMANHO + 1];
         strcpy(prefixo, palavra);
-
         for (int r = 0; r < i; r++) {
-            int len = (int)strlen(prefixo);
-            prefixo[len] = ultimo;
-            prefixo[len + 1] = '\0';
+            int lp = (int)strlen(prefixo);
+            if (lp >= tamMaxSenha) break;
+            prefixo[lp] = dados->ultimo;
+            prefixo[lp + 1] = '\0';
         }
 
-        if (i > 0) {
-            strcpy(resultados[total], prefixo);
-            total++;
-            if (total >= maxResultados) break;
+        // Versão sem número
+        pthread_mutex_lock(dados->mutex);
+        if (dados->total_global[0] < dados->maxResultados) {
+            dados->resultados_globais[dados->total_global[0]] = duplicar_string(prefixo);
+            dados->total_global[0]++;
         }
-        
+        pthread_mutex_unlock(dados->mutex);
+
         // Criar sufixos com números sendo o máximo a quantidade de espaço livre
-        // ex: nome até TAMANHO(7) sobra 3 resulta em: nome100, nome101, ..., nome999
-        int espacoNumeros = TAMANHO - (int)strlen(prefixo);
+        // ex: nome até tamMaxSenha(7) sobra 3 resulta em: nome100, nome101, ..., nome999
+        int espacoNumeros = tamMaxSenha - (int)strlen(prefixo);
         if (espacoNumeros <= 0) continue;
 
         int limite = potencia10(espacoNumeros) - 1;
 
-        for (int n = 1; n <= limite && total < maxResultados; n++) {
+        for (int n = 1; n <= limite; n++) {
             char candidato[TAMANHO + 1];
             snprintf(candidato, sizeof(candidato), "%s%d", prefixo, n);
-            candidato[TAMANHO] = '\0';
+            candidato[tamMaxSenha] = '\0';
 
-            if ((int)strlen(candidato) <= TAMANHO) {
-                strcpy(resultados[total], candidato);
-                total++;
+            if ((int)strlen(candidato) > tamMaxSenha) continue;
+
+            pthread_mutex_lock(dados->mutex);
+            if (dados->total_global[0] < dados->maxResultados) {
+                dados->resultados_globais[dados->total_global[0]] = duplicar_string(candidato);
+                dados->total_global[0]++;
             }
+            pthread_mutex_unlock(dados->mutex);
         }
     }
+    pthread_exit(NULL);
+}
+
+/* 
+ * Gera mutações por sufixo respeitando o tamanho máximo da senha.
+ * nome -> nome123, nomenom, nomeeee, nomeee1
+ * 
+ * O loop externo da função original vai de 1 a max_repeti_ult_letra (3 iterações).
+ * Essas iterações são distribuídas entre as threads disponíveis.
+ */
+int mutacao_sufixo(const char *palavra, char resultados[][tamMaxSenha + 1], int maxResultados, int num_threads) {
+    int tamanhoBase = (int)strlen(palavra);
+    int max_repeti_ult_letra = 3;
+
+    // se o tamanho da palavra ja é o máximo, não é possível adicionar sufixo
+    if (tamanhoBase >= tamMaxSenha) return 0;
+    // palavra vazia
+    if (tamanhoBase == 0) return 0;
+
+    char ultimo = palavra[tamanhoBase - 1];
+    int espacoLivre = tamMaxSenha - tamanhoBase;
+
+    // Número real de iterações do loop externo
+    int max_iter = (max_repeti_ult_letra < espacoLivre) ? max_repeti_ult_letra : espacoLivre;
+
+    char **res_temp = (char **)calloc(maxResultados, sizeof(char *));
+    if (!res_temp) return 0;
+
+    int total_global = 0;
+    pthread_mutex_t mutex;
+    pthread_mutex_init(&mutex, NULL);
+
+    if (num_threads > max_iter) num_threads = max_iter;
+
+    pthread_t threads[TAMANHO];
+    DadosSufixo dados_threads[TAMANHO];
+    int carga = max_iter / num_threads;
+
+    for (int i = 0; i < num_threads; i++) {
+        dados_threads[i].thread_id          = i;
+        dados_threads[i].inicio_iter        = i * carga + 1; // começa em 1 (i=0 não gera sufixo)
+        dados_threads[i].fim_iter           = (i == num_threads - 1) ? max_iter : (i + 1) * carga;
+        dados_threads[i].palavra            = palavra;
+        dados_threads[i].tamanhoBase        = tamanhoBase;
+        dados_threads[i].ultimo             = ultimo;
+        dados_threads[i].espacoLivre        = espacoLivre;
+        dados_threads[i].resultados_globais = res_temp;
+        dados_threads[i].total_global       = &total_global;
+        dados_threads[i].mutex              = &mutex;
+        dados_threads[i].maxResultados      = maxResultados;
+
+        pthread_create(&threads[i], NULL, rotina_mutacao_sufixo, (void *)&dados_threads[i]);
+    }
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    pthread_mutex_destroy(&mutex);
+
+    int total = total_global;
+    for (int i = 0; i < total; i++) {
+        strncpy(resultados[i], res_temp[i], tamMaxSenha);
+        resultados[i][tamMaxSenha] = '\0';
+        free(res_temp[i]);
+    }
+    free(res_temp);
 
     return total;
 }
@@ -299,16 +473,16 @@ void *rotina_mutacao_data(void *arg) {
     for (int k = dados->inicio; k < dados->fim; k++) {
         if (k < 12) {
             // Súfixo Mês (0 a 11)
-            snprintf(dados->resultados[k], TAMANHO + 1, "%s%02d", dados->palavra, k + 1);
+            snprintf(dados->resultados[k], tamMaxSenha + 1, "%s%02d", dados->palavra, k + 1);
         } else if (k < 43) {
             // Súfixo Dia (12 a 42)
-            snprintf(dados->resultados[k], TAMANHO + 1, "%s%02d", dados->palavra, k - 12 + 1);
+            snprintf(dados->resultados[k], tamMaxSenha + 1, "%s%02d", dados->palavra, k - 12 + 1);
         } else if (k < 55) {
             // Prefixo Mês (43 a 54)
-            snprintf(dados->resultados[k], TAMANHO + 1, "%02d%s", k - 43 + 1, dados->palavra);
+            snprintf(dados->resultados[k], tamMaxSenha + 1, "%02d%s", k - 43 + 1, dados->palavra);
         } else {
             // Prefixo Dia (55 a 85)
-            snprintf(dados->resultados[k], TAMANHO + 1, "%02d%s", k - 55 + 1, dados->palavra);
+            snprintf(dados->resultados[k], tamMaxSenha + 1, "%02d%s", k - 55 + 1, dados->palavra);
         }
     }
     pthread_exit(NULL);
@@ -316,10 +490,10 @@ void *rotina_mutacao_data(void *arg) {
 
 /*
  * Gera mutações com datas
- * Se a palavra for um ano, gera mutações de data compatíveis com TAMANHO.
+ * Se a palavra for um ano, gera mutações de data compatíveis com tamMaxSenha.
  * YYYY -> YYYYMMD, DDMYYYY, YYYYMDD
  */
-int mutacao_data(const char *palavra, char resultados[][TAMANHO + 1], int maxResultados, int num_threads) {
+int mutacao_data(const char *palavra, char resultados[][tamMaxSenha + 1], int maxResultados, int num_threads) {
     if (!eh_ano(palavra)) return 0;
 
     int total_mutacoes = 86; 
@@ -347,30 +521,96 @@ int mutacao_data(const char *palavra, char resultados[][TAMANHO + 1], int maxRes
     return total_mutacoes;
 }
 
-/*
- * Gera mutações concatendo de duas formas as palavras do input.
- * nome + teste = nometes, tesnome
+/* 
+ * Cada thread recebe um subintervalo da lista de palavras (inicio_lista..fim_lista).
+ * Para cada palavra no seu intervalo, gera as duas concatenações (palavra+termo e termo+palavra),
+ * truncando ao tamMaxSenha. 
  */
-int mutacao_concatenar_termos(const char *palavra, char **listaPalavras, int qtdPalavras, char resultados[][TAMANHO + 1], int maxResultados) {
-    int total = 0;
+void *rotina_mutacao_concatenar(void *arg) {
+    DadosConcatenar *dados = (DadosConcatenar *)arg;
+    const char *palavra = dados->palavra;
 
-    for (int i = 0; i < qtdPalavras && total < maxResultados; i++) {
+    for (int i = dados->inicio_lista; i < dados->fim_lista; i++) {
         char temp1[2 * TAMANHO + 10];
         char temp2[2 * TAMANHO + 10];
 
-        snprintf(temp1, sizeof(temp1), "%s%s", palavra, listaPalavras[i]);
-        snprintf(temp2, sizeof(temp2), "%s%s", listaPalavras[i], palavra);
+        snprintf(temp1, sizeof(temp1), "%s%s", palavra, dados->listaPalavras[i]);
+        snprintf(temp2, sizeof(temp2), "%s%s", dados->listaPalavras[i], palavra);
 
-        strncpy(resultados[total], temp1, TAMANHO);
-        resultados[total][TAMANHO] = '\0';
-        total++;
-
-        if (total < maxResultados) {
-            strncpy(resultados[total], temp2, TAMANHO);
-            resultados[total][TAMANHO] = '\0';
-            total++;
+        // Primeira concatenação: palavra + termo
+        pthread_mutex_lock(dados->mutex);
+        if (dados->total_global[0] < dados->maxResultados) {
+            char buf[TAMANHO + 1];
+            strncpy(buf, temp1, tamMaxSenha);
+            buf[tamMaxSenha] = '\0';
+            dados->resultados_globais[dados->total_global[0]] = duplicar_string(buf);
+            dados->total_global[0]++;
         }
+        pthread_mutex_unlock(dados->mutex);
+
+        // Segunda concatenação: termo + palavra
+        pthread_mutex_lock(dados->mutex);
+        if (dados->total_global[0] < dados->maxResultados) {
+            char buf[TAMANHO + 1];
+            strncpy(buf, temp2, tamMaxSenha);
+            buf[tamMaxSenha] = '\0';
+            dados->resultados_globais[dados->total_global[0]] = duplicar_string(buf);
+            dados->total_global[0]++;
+        }
+        pthread_mutex_unlock(dados->mutex);
     }
+    pthread_exit(NULL);
+}
+
+/*
+ * Gera mutações concatendo de duas formas as palavras do input.
+ * nome + teste = nometes, tesnome
+ *
+ * A lista de palavras é dividida igualmente entre as threads disponíveis.
+ * Cada thread processa o seu subintervalo de forma independente.
+ */
+int mutacao_concatenar_termos(const char *palavra, char **listaPalavras, int qtdPalavras, char resultados[][tamMaxSenha + 1], int maxResultados, int num_threads) {
+    if (qtdPalavras == 0) return 0;
+
+    char **res_temp = (char **)calloc(maxResultados, sizeof(char *));
+    if (!res_temp) return 0;
+
+    int total_global = 0;
+    pthread_mutex_t mutex;
+    pthread_mutex_init(&mutex, NULL);
+
+    if (num_threads > qtdPalavras) num_threads = qtdPalavras;
+
+    pthread_t threads[num_threads];
+    DadosConcatenar dados_threads[num_threads];
+    int carga = qtdPalavras / num_threads;
+
+    for (int i = 0; i < num_threads; i++) {
+        dados_threads[i].thread_id          = i;
+        dados_threads[i].inicio_lista       = i * carga;
+        dados_threads[i].fim_lista          = (i == num_threads - 1) ? qtdPalavras : (i + 1) * carga;
+        dados_threads[i].palavra            = palavra;
+        dados_threads[i].listaPalavras      = listaPalavras;
+        dados_threads[i].resultados_globais  = res_temp;
+        dados_threads[i].total_global       = &total_global;
+        dados_threads[i].mutex              = &mutex;
+        dados_threads[i].maxResultados      = maxResultados;
+
+        pthread_create(&threads[i], NULL, rotina_mutacao_concatenar, (void *)&dados_threads[i]);
+    }
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    pthread_mutex_destroy(&mutex);
+
+    int total = total_global;
+    for (int i = 0; i < total; i++) {
+        strncpy(resultados[i], res_temp[i], tamMaxSenha);
+        resultados[i][tamMaxSenha] = '\0';
+        free(res_temp[i]);
+    }
+    free(res_temp);
 
     return total;
 }
@@ -380,14 +620,14 @@ int mutacao_concatenar_termos(const char *palavra, char **listaPalavras, int qtd
  * Compara se as mutações geradas são iguais a senha alvo. 
  */
 char *ataque_por_mutacoes(char **array, int qtdPalavras, long *tentativas, int num_threads) {
-    printf("[ETAPA 1] Iniciando ataque por mutacoes\n\n");
+    printf("[ETAPA 1] Iniciando ataque por mutacoes PARALELO com %d threads\n\n", num_threads);
 
     for (int i = 0; i < qtdPalavras; i++) {
 
-        char resultados[MAX_MUTACOES][TAMANHO + 1];
+        char resultados[MAX_MUTACOES][tamMaxSenha + 1];
         int qtd = 0;
 
-        qtd = mutacao_substituicao(array[i], resultados, MAX_MUTACOES);
+        qtd = mutacao_substituicao(array[i], resultados, MAX_MUTACOES, num_threads);
         for (int j = 0; j < qtd; j++) {
             (*tentativas)++;
             if (comparar_candidato(resultados[j])) {
@@ -395,7 +635,7 @@ char *ataque_por_mutacoes(char **array, int qtdPalavras, long *tentativas, int n
             }
         }
 
-        qtd = mutacao_sufixo(array[i], resultados, MAX_MUTACOES);
+        qtd = mutacao_sufixo(array[i], resultados, MAX_MUTACOES, num_threads);
         for (int j = 0; j < qtd; j++) {
             (*tentativas)++;
             if (comparar_candidato(resultados[j])) {
@@ -411,7 +651,7 @@ char *ataque_por_mutacoes(char **array, int qtdPalavras, long *tentativas, int n
             }
         }
 
-        qtd = mutacao_concatenar_termos(array[i], array, qtdPalavras, resultados, MAX_MUTACOES);
+        qtd = mutacao_concatenar_termos(array[i], array, qtdPalavras, resultados, MAX_MUTACOES, num_threads);
         for (int j = 0; j < qtd; j++) {
             (*tentativas)++;
             if (comparar_candidato(resultados[j])) {
@@ -447,16 +687,16 @@ void *rotina_ataque_dicionario(void *arg) {
 }
 /*
  * Ataque de força bruta usando o dicionário rockyou.
- * Aplica um filtro e testa somente as palavras com tamanho igual a TAMANHO.
+ * Aplica um filtro e testa somente as palavras com tamanho igual a tamMaxSenha.
  */
 char *ataque_por_dicionario(long *tentativas, int num_threads) {
     printf("[ETAPA 2] Iniciando o ataque por dicionario PARALELO com %d threads\n\n", num_threads);
 
     int qtd = 0;
-    char **palavras = ler_arquivo_para_array(NOME_DICIONARIO, &qtd, TAMANHO);
+    char **palavras = ler_arquivo_para_array(NOME_DICIONARIO, &qtd, tamMaxSenha);
     if (palavras == NULL) return NULL;
 
-    printf("Total de palavras filtradas com tamanho %d: %d\n", TAMANHO, qtd);
+    printf("Total de palavras filtradas com tamanho %d: %d\n", tamMaxSenha, qtd);
 
     pthread_t threads[num_threads];
     DadosThreadDicionario dados_threads[num_threads];
@@ -489,17 +729,17 @@ char *ataque_por_dicionario(long *tentativas, int num_threads) {
 /* ATAQUE NÚMERICO */
 
 /*
- * Ataque usando apenas números com exatamente TAMANHO dígitos.
- * Para TAMANHO=7, vai de 1000000 ate 9999999.
+ * Ataque usando apenas números com exatamente tamMaxSenha dígitos.
+ * Para tamMaxSenha=7, vai de 1000000 ate 9999999.
  */
 void *rotina_ataque_numerico(void *arg) {
     DadosThread *dados = (DadosThread *)arg;
-    char tentativa[TAMANHO + 1];
+    char tentativa[tamMaxSenha + 1];
 
     for (long long i = dados->inicio; i < dados->fim; i++) {
         if (*(dados->senha_achada) != NULL) pthread_exit(NULL);
 
-        sprintf(tentativa, "%0*lld", TAMANHO, i);
+        sprintf(tentativa, "%0*lld", tamMaxSenha, i);
 
         if (dados->thread_id == 0 && i % 1000000 == 0) {
             printf("[PROGRESSO] %lld milhoes de numeros testados...\n", i / 1000000);
@@ -516,12 +756,12 @@ void *rotina_ataque_numerico(void *arg) {
 }
 
 /*
- * Ataque usando apenas números com exatamente TAMANHO dígitos.
- * Para TAMANHO=7, vai de 1000000 ate 9999999.
+ * Ataque usando apenas números com exatamente tamMaxSenha dígitos.
+ * Para tamMaxSenha=7, vai de 1000000 ate 9999999.
  */
 char *ataque_numerico(long *tentativas, int num_threads) {
-    long long inicio_total = potencia10(TAMANHO - 1);
-    long long fim_total = potencia10(TAMANHO);
+    long long inicio_total = potencia10(tamMaxSenha - 1);
+    long long fim_total = potencia10(tamMaxSenha);
     long long total_numeros = fim_total - inicio_total;
     long long carga_por_thread = total_numeros / num_threads;
 
@@ -573,7 +813,7 @@ char *forca_bruta(char **arrayBase, int qtdPalavrasBase, long *tentativas, int n
 /* ============================================================================ */
 
 int main() {
-    // Configuraçao para 
+    // Configuraçao de linguagem 
     setlocale(LC_ALL, "");
 
     char nomeArquivoBase[256];
@@ -600,9 +840,8 @@ int main() {
     }
 
     printf("\nInforme o tamanho maximo de senha: ");
-    scanf(" %d", &tamanho);
-
-    if(tamanho <= 1) tamanho = TAMANHO;
+    scanf(" %d", &tamMaxSenha);
+    if(tamMaxSenha <= 1) tamMaxSenha = tamMaxSenha;
 
     printf("\nDigite a quantidade de threads: ");
     scanf(" %d", &numero_threads);
@@ -612,6 +851,7 @@ int main() {
     }else{
         numero_threads = NUMERO_DE_THREADS;
     }
+
     printf("\n========================\n");
 
     /* Chama a função de força bruta para descobrir a senha alvo */

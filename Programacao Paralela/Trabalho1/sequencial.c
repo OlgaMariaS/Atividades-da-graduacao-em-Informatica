@@ -5,7 +5,7 @@
 #include <time.h>
 #include <locale.h>
 
-#define TAMANHO 7
+#define TAMANHO 12
 #define MAX_MUTACOES 1000
 #define MAX_LINHA 512
 #define NOME_DICIONARIO "rockyou.txt"
