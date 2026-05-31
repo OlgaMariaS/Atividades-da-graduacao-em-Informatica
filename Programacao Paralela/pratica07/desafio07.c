@@ -167,8 +167,6 @@ void *buscaMaiorMenor(void *ptr){
     printf("\nThread %d: vou procurar o Maior e o Menor de %d a %d\n", pack->tid, pack->ini, pack->fim);
 
     for (i=pack->ini+1; i<=(pack->fim); i++){
-        if (vet[pack->posMaior]<vet[i])
-            pack->posMaior=i;
         if (vet[pack->posMaior] < vet[i])
             pack->posMaior = i;
         if (vet[pack->posMenor] > vet[i])

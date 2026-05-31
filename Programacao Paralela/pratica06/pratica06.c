@@ -44,7 +44,6 @@ Entao, execute o programa com a seguinte linha de comando:
 #include <string.h>
 #include <pthread.h>
 
-
 #define maxThreads 50
 
 void *calculaFatorial(void *ptr);

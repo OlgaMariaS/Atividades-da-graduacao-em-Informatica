@@ -1,6 +1,6 @@
 /*
 
-Pratica 03: testar a passagem de uma informacao composta para as threads, permitindo o retorno privado de calculos realizados por elas. Aqui, duas threads calculam a soma de numeros sequenciais inteiros que v�o de 1 ao tamanho fornecido pelo usu�rio.
+Pratica 03: testar a passagem de uma informacao composta para as threads, permitindo o retorno privado de calculos realizados por elas. Aqui, duas threads calculam a soma de numeros sequenciais inteiros que vão de 1 ao tamanho fornecido pelo usuário.
 
 ===========
 Experimento
